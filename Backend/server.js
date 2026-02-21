@@ -1,0 +1,54 @@
+import express from "express";
+import helmet from "helmet";
+import morgan from "morgan";
+import cors from "cors";
+import dotenv from "dotenv";
+
+import itemRoutes from "./routes/itemRoutes.js";
+import { sql } from "../Database/db.js";
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+app.use(cors());
+app.use(helmet());
+app.use(morgan("dev"));
+
+app.use("/api/items", itemRoutes);
+
+async function testQuery() {
+  try {
+    const result = await sql`
+        SELECT
+            o.order_id,
+            oi.total_cost,
+            oi.item_quantity,
+            i.category,
+            i.item_name,
+            o.created_at,
+            a.address1,
+            a.address2,
+            a.zipcode,
+            o.service_type
+        FROM
+            orders o
+            LEFT JOIN order_items oi ON o.order_id = oi.order_id
+            LEFT JOIN item i ON oi.item_id = i.item_id
+            LEFT JOIN address a ON o.add_id = a.add_id;
+    `;
+
+    console.table(result.slice(0, 10));
+    console.log("Database query successful");
+  } catch (error) {
+    console.error("Error initializing database:", error);
+  }
+}
+
+testQuery().then(() => {
+    app.listen(PORT, () => {
+        console.log("Server is running on port " + PORT);
+    });
+});
