@@ -3,6 +3,7 @@ import HomePage from "./pages/HomePage"
 import ItemPage from "./pages/ItemPage"
 import { Routes, Route } from "react-router-dom"
 import { useThemeStore } from "./store/useThemeStore"
+import { Toaster } from "react-hot-toast"
 
 function App() {
   const { theme } = useThemeStore()
@@ -14,7 +15,8 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/item/:sku" element={<ItemPage />} />
       </Routes>
-      <h1 className="text-red-500">Welcome to the Frontend!</h1>
+
+      <Toaster />
     </div>
   )
 }

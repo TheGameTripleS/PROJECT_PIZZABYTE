@@ -16,16 +16,17 @@ export const getItems = async (req, res) => {
 };
 
 export const createItem = async (req, res) => {
-    const { sku, item_name, category, size, item_price, image_url } = req.body;
+    const { sku, item_name, category, size, item_price, image_url, status } = req.body;
+    console.log('Create item request body:', req.body);
 
-    if (!sku || !item_name || !category || !size || !item_price) {
+    if (!sku || !item_name || !category || !size || !item_price || !image_url) {
         return res.status(400).json({ success: false, message: 'All fields are required' });
     }
 
     try {
         const newItem = await sql`
-            INSERT INTO item (sku, item_name, category, size, item_price, image_url)
-            VALUES (${sku}, ${item_name}, ${category}, ${size}, ${item_price}, ${image_url})
+            INSERT INTO item (sku, item_name, category, size, item_price, image_url, status)
+            VALUES (${sku}, ${item_name}, ${category}, ${size}, ${item_price}, ${image_url}, ${status})
             RETURNING *
         `;
 
@@ -55,7 +56,8 @@ export const getItem = async (req, res) => {
 
 export const updateItem = async (req, res) => {
     const { sku: currentSku } = req.params;
-    const { sku: newSku, item_name, category, size, item_price, image_url } = req.body;
+    console.log('update request',req.body);
+    const { sku: newSku, item_name, category, size, item_price, image_url, status } = req.body;
 
     try {
         const updatedItem = await sql`
@@ -66,7 +68,8 @@ export const updateItem = async (req, res) => {
                 category = COALESCE(${category || null}, category),
                 size = COALESCE(${size || null}, size),
                 item_price = COALESCE(${item_price || null}, item_price),
-                image_url = COALESCE(${image_url || null}, image_url)
+                image_url = COALESCE(${image_url || null}, image_url),
+                status = COALESCE(${status || null}, status)
             WHERE sku = ${currentSku}
             RETURNING *
         `;
