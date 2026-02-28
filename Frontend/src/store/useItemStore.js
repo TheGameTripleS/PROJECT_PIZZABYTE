@@ -10,6 +10,7 @@ export const useItemStore = create((set, get) => ({
   loading: false,
   error: null,
   currentItem: null,
+  searchTerm: "",
 
   // form state
   formData: {
@@ -21,6 +22,9 @@ export const useItemStore = create((set, get) => ({
     image_url: "",
     status: "continued",
   },
+
+  setSearchTerm: (term) => set({ searchTerm: term }),
+
   setFormData: (formData) => set({ formData }),
   
   resetForm: () => set({ 
@@ -59,10 +63,16 @@ export const useItemStore = create((set, get) => ({
   fetchItems: async () => {
     set({ loading: true });
     try {
-      const response = await axios.get(`${BASE_URL}/api/items`);
+      const { searchTerm } = get();
+      
+      const url = searchTerm 
+        ? `${BASE_URL}/api/items?search=${encodeURIComponent(searchTerm)}`
+        : `${BASE_URL}/api/items`;
+
+      const response = await axios.get(url);
       set({ items: response.data.data, error: null });
     } catch (err) {
-      if (err.status === 429) set({ error: "Rate limit exceeded" });
+      if (err.status == 429) set({ error: "Rate limit exceeded" });
       else set({ error: "Failed to fetch items. Please try again." });
     } finally {
       set({ loading: false });

@@ -2,16 +2,30 @@ import { sql } from '../../Database/db.js';
 
 export const getItems = async (req, res) => {
     try {
-        const items = await sql`
-            SELECT * FROM item
-            ORDER BY item_name DESC
-        `;
+        const { search } = req.query;
+        let items;
 
-        console.log('Fetched items:', items);
+        if (search) {
+            const searchPattern = `%${search}%`;
+            
+            items = await sql`
+                SELECT * FROM item
+                WHERE item_name ILIKE ${searchPattern} 
+                   OR sku ILIKE ${searchPattern}
+                ORDER BY item_name DESC
+            `;
+        } else {
+            items = await sql`
+                SELECT * FROM item
+                ORDER BY item_name DESC
+            `;
+        }
+
+        console.log(`Fetched ${items.length} items. Search term:`, search || "None");
         res.status(200).json({ success: true, data: items });
     } catch (error) {
         console.error('Error in getItems function:', error);
-        res.status(500).json({ success: false,message: 'Internal server error' });
+        res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
 
