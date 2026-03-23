@@ -48,7 +48,7 @@ function ItemCard({ item }) {
         </h2>
         
         <p className="text-2xl font-bold text-primary">
-          ${Number(item.item_price).toFixed(2)}
+          Tk{Number(item.item_price).toFixed(2)}
         </p>
 
         {/* CATEGORY & SIZE BADGES */}

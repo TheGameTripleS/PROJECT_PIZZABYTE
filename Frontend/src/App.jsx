@@ -1,5 +1,7 @@
 import NavBar from "./components/NavBar"
-import HomePage from "./pages/HomePage"
+import ProtectedRoute from "./components/ProtectedRoute"
+import Home from "./pages/Home"
+import AdminHomePage from "./pages/AdminHomePage"
 import ItemPage from "./pages/ItemPage"
 import { Routes, Route } from "react-router-dom"
 import { useThemeStore } from "./store/useThemeStore"
@@ -7,13 +9,38 @@ import { Toaster } from "react-hot-toast"
 
 function App() {
   const { theme } = useThemeStore()
-  
+
   return (
     <div className="min-h-screen bg-base-200 transition-colors duration-300" data-theme={theme}>
-      <NavBar />
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/item/:sku" element={<ItemPage />} />
+        {/* Public homepage — has its own inline navbar */}
+        <Route path="/" element={<Home />} />
+
+        {/* Admin dashboard — requires login */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <>
+                <NavBar />
+                <AdminHomePage />
+              </>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Item edit page — requires login */}
+        <Route
+          path="/item/:sku"
+          element={
+            <ProtectedRoute>
+              <>
+                <NavBar />
+                <ItemPage />
+              </>
+            </ProtectedRoute>
+          }
+        />
       </Routes>
 
       <Toaster />

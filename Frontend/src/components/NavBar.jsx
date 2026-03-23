@@ -1,43 +1,48 @@
-import { Link, useResolvedPath } from "react-router-dom"
-import { ShoppingCartIcon } from "lucide-react"
+import { Link } from "react-router-dom"
+import { LogOutIcon } from "lucide-react"
 import ThemeSelector from "./ThemeSelector"
+import { useAdminStore } from "../store/useAdminStore"
+import { useNavigate } from "react-router-dom"
 
 function NavBar() {
-  const {pathname} = useResolvedPath()
-  const isHomePage = pathname === "/"
+  const { adminLogout } = useAdminStore()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    adminLogout()
+    navigate("/")
+  }
 
   return (
     <div className="bg-base-100/80 backdrop-blur-lg border-b border-base-content/10 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto">
-         <div className="navbar px-4 min-h-[4rem] justify-between">
+        <div className="navbar px-4 min-h-[4rem] justify-between">
+
           {/* LOGO */}
           <div className="flex-1 lg:flex-none">
-            <Link to="/" className="hover:opacity-80 transition-opacity">
+            <Link to="/admin" className="hover:opacity-80 transition-opacity">
               <div className="flex items-center gap-2">
-                <ShoppingCartIcon className="size-9 text-primary" />
-                <span 
-                  className="font-semibold font-mono tracking-widest text-2xl
-                    bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary"
-                >
-                  POSTGRESTORE
+                <img src="/images/logo.png" alt="PIZZAbyte" className="h-9 w-9 object-contain" />
+                <span className="font-semibold font-mono tracking-widest text-2xl bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+                  PIZZAbyte
                 </span>
               </div>
             </Link>
           </div>
-          {/* RIGHT SECTION */}
-          <div className="flex items-center gap-4">
-            <ThemeSelector />
 
-            {isHomePage && (
-              <div className="indicator">
-                <div className="p-2 rounded-full  hover:bg-base-200 transition-colors">
-                  <ShoppingCartIcon className="size-5" />
-                  <span className="badge badge-sm badge-primary indicator-item">8</span>
-                </div>
-              </div>
-            )}
+          {/* RIGHT SECTION */}
+          <div className="flex items-center gap-2">
+            <ThemeSelector />
+            <button
+              className="btn btn-ghost btn-sm gap-2"
+              onClick={handleLogout}
+              title="Logout"
+            >
+              <LogOutIcon className="size-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
-         </div>
+        </div>
       </div>
     </div>
   )

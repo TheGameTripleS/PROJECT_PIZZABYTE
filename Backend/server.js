@@ -5,7 +5,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 
 import itemRoutes from "./routes/itemRoutes.js";
-import { sql } from "../Database/db.js";
+import authRoutes from "./routes/authRoutes.js";
+import { sql } from "./config/db.js";
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.use(helmet());
 app.use(morgan("dev"));
 
 app.use("/api/items", itemRoutes);
+app.use("/api/auth", authRoutes);
 
 async function testQuery() {
   try {

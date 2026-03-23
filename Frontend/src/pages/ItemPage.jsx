@@ -19,7 +19,7 @@ function ItemPage() {
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this item?")) {
       await deleteItem(originalSku);
-      navigate("/");
+      navigate("/admin");
     }
   };
 
@@ -47,11 +47,11 @@ function ItemPage() {
   };
 
   if (loading) return <div className="flex justify-center items-center min-h-screen"><div className="loading loading-spinner loading-lg text-primary" /></div>;
-  if (error) return <div className="container mx-auto px-4 py-8"><div className="alert alert-error">{error}</div><button onClick={() => navigate("/")} className="btn btn-ghost mt-4"><ArrowLeftIcon className="size-4 mr-2" /> Back to Menu</button></div>;
+  if (error) return <div className="container mx-auto px-4 py-8"><div className="alert alert-error">{error}</div><button onClick={() => navigate("/admin")} className="btn btn-ghost mt-4"><ArrowLeftIcon className="size-4 mr-2" /> Back to Menu</button></div>;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <button onClick={() => navigate("/")} className="btn btn-ghost mb-8">
+      <button onClick={() => navigate("/admin")} className="btn btn-ghost mb-8">
         <ArrowLeftIcon className="size-4 mr-2" /> Back to Menu
       </button>
 
