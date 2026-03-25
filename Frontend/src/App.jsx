@@ -3,6 +3,7 @@ import ProtectedRoute from "./components/ProtectedRoute"
 import Home from "./pages/Home"
 import AdminHomePage from "./pages/AdminHomePage"
 import ItemPage from "./pages/ItemPage"
+import StaffPage from "./pages/StaffPage"
 import { Routes, Route } from "react-router-dom"
 import { useThemeStore } from "./store/useThemeStore"
 import { Toaster } from "react-hot-toast"
@@ -37,6 +38,18 @@ function App() {
               <>
                 <NavBar />
                 <ItemPage />
+              </>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/staff"
+          element={
+            <ProtectedRoute>
+              <>
+                <NavBar />
+                <StaffPage />
               </>
             </ProtectedRoute>
           }

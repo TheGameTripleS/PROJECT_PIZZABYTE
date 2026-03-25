@@ -2,9 +2,9 @@
   "name": "project_pizzabyte",
   "version": "1.0.0",
   "description": "",
-  "main": "backend/server.js",
+  "main": "Backend/server.js",
   "scripts": {
-    "dev": "nodemon -L backend/server.js"
+    "dev": "nodemon -L Backend/server.js"
   },
   "keywords": [],
   "author": "",

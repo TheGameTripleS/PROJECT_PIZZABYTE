@@ -32,6 +32,9 @@ function NavBar() {
 
           {/* RIGHT SECTION */}
           <div className="flex items-center gap-2">
+            <Link to="/staff" className="btn btn-ghost btn-sm">
+              Staff
+            </Link>
             <ThemeSelector />
             <button
               className="btn btn-ghost btn-sm gap-2"

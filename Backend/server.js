@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 
 import itemRoutes from "./routes/itemRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import staffRoutes from "./routes/staffRoutes.js";
 import { sql } from "./config/db.js";
 
 dotenv.config();
@@ -20,6 +21,7 @@ app.use(morgan("dev"));
 
 app.use("/api/items", itemRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/staff", staffRoutes);
 
 async function testQuery() {
   try {
