@@ -3,6 +3,7 @@ import NavBar from "./components/NavBar"
 import ProtectedRoute from "./components/ProtectedRoute"
 import Home from "./pages/Home"
 import AdminHomePage from "./pages/AdminHomePage"
+import AdminItemPage from "./pages/AdminItemPage"
 import ItemPage from "./pages/ItemPage"
 import StaffPage from "./pages/StaffPage"
 import { Routes, Route } from "react-router-dom"
@@ -38,6 +39,18 @@ function App() {
         />
 
         {/* Item edit page — requires login */}
+        <Route
+          path="/admin/items"
+          element={
+            <ProtectedRoute>
+              <>
+                <NavBar />
+                <AdminItemPage />
+              </>
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/item/:sku"
           element={

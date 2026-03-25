@@ -1,12 +1,15 @@
 import { Link } from "react-router-dom"
-import { LogOutIcon } from "lucide-react"
+import { HomeIcon, LogOutIcon } from "lucide-react"
 import ThemeSelector from "./ThemeSelector"
 import { useAdminStore } from "../store/useAdminStore"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 
 function NavBar() {
   const { adminLogout } = useAdminStore()
   const navigate = useNavigate()
+  const location = useLocation()
+  const isAdminHome = location.pathname === "/admin"
+  const shouldShowHome = location.pathname.startsWith("/staff") || location.pathname.startsWith("/admin/items") || location.pathname.startsWith("/item/")
 
   const handleLogout = () => {
     adminLogout()
@@ -32,18 +35,28 @@ function NavBar() {
 
           {/* RIGHT SECTION */}
           <div className="flex items-center gap-2">
-            <Link to="/staff" className="btn btn-ghost btn-sm">
-              Staff
-            </Link>
+            {shouldShowHome && (
+              <button
+                className="btn btn-ghost btn-sm gap-2"
+                onClick={() => navigate("/admin")}
+                title="Home"
+              >
+                <HomeIcon className="size-4" />
+                <span className="hidden sm:inline">Home</span>
+              </button>
+            )}
+
             <ThemeSelector />
-            <button
-              className="btn btn-ghost btn-sm gap-2"
-              onClick={handleLogout}
-              title="Logout"
-            >
-              <LogOutIcon className="size-4" />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
+            {isAdminHome && (
+              <button
+                className="btn btn-ghost btn-sm gap-2"
+                onClick={handleLogout}
+                title="Logout"
+              >
+                <LogOutIcon className="size-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
