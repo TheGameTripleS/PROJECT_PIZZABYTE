@@ -6,6 +6,8 @@ const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:3000
 
 export const useStaffStore = create((set, get) => ({
   staff: [],
+  relationByStaffId: {},
+  relationLoadingByStaffId: {},
   loading: false,
   error: null,
 
@@ -38,6 +40,37 @@ export const useStaffStore = create((set, get) => ({
       set({ error: "Failed to fetch staff" });
     } finally {
       set({ loading: false });
+    }
+  },
+
+  fetchStaffRelations: async (staffId) => {
+    set((prev) => ({
+      relationLoadingByStaffId: {
+        ...prev.relationLoadingByStaffId,
+        [staffId]: true,
+      },
+    }));
+
+    try {
+      const response = await axios.get(`${BASE_URL}/api/staff/${staffId}/relations`);
+      const details = response.data?.data || { rota: [], orders: [], summary: { rota_count: 0, order_count: 0 } };
+
+      set((prev) => ({
+        relationByStaffId: {
+          ...prev.relationByStaffId,
+          [staffId]: details,
+        },
+      }));
+    } catch (error) {
+      console.error("Error in fetchStaffRelations function:", error);
+      toast.error(error.response?.data?.message || "Failed to fetch staff relations");
+    } finally {
+      set((prev) => ({
+        relationLoadingByStaffId: {
+          ...prev.relationLoadingByStaffId,
+          [staffId]: false,
+        },
+      }));
     }
   },
 

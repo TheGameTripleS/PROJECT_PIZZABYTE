@@ -13,11 +13,16 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const SERVER_RUN_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
 app.use(express.json());
 app.use(cors());
 app.use(helmet());
 app.use(morgan("dev"));
+
+app.get("/api/meta/run-id", (_req, res) => {
+  res.status(200).json({ success: true, runId: SERVER_RUN_ID });
+});
 
 app.use("/api/items", itemRoutes);
 app.use("/api/auth", authRoutes);

@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import NavBar from "./components/NavBar"
 import ProtectedRoute from "./components/ProtectedRoute"
 import Home from "./pages/Home"
@@ -6,10 +7,16 @@ import ItemPage from "./pages/ItemPage"
 import StaffPage from "./pages/StaffPage"
 import { Routes, Route } from "react-router-dom"
 import { useThemeStore } from "./store/useThemeStore"
+import { useAdminStore } from "./store/useAdminStore"
 import { Toaster } from "react-hot-toast"
 
 function App() {
   const { theme } = useThemeStore()
+  const { initializeAdminSession } = useAdminStore()
+
+  useEffect(() => {
+    initializeAdminSession()
+  }, [initializeAdminSession])
 
   return (
     <div className="min-h-screen bg-base-200 transition-colors duration-300" data-theme={theme}>

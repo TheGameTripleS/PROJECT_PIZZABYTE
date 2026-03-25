@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Trash2Icon, RefreshCwIcon, UsersIcon, IndianRupeeIcon } from "lucide-react";
+import { Trash2Icon, RefreshCwIcon, UsersIcon, IndianRupeeIcon, ChevronsUpDownIcon } from "lucide-react";
 import { useStaffStore } from "../store/useStaffStore";
 
 function StaffPage() {
@@ -13,9 +13,13 @@ function StaffPage() {
     addStaff,
     deleteStaff,
     updateStaffRate,
+    fetchStaffRelations,
+    relationByStaffId,
+    relationLoadingByStaffId,
   } = useStaffStore();
 
   const [rateInputs, setRateInputs] = useState({});
+  const [expandedStaffId, setExpandedStaffId] = useState(null);
 
   useEffect(() => {
     fetchStaff();
@@ -23,6 +27,19 @@ function StaffPage() {
 
   const handleRateChange = (staffId, value) => {
     setRateInputs((prev) => ({ ...prev, [staffId]: value }));
+  };
+
+  const toggleDetails = async (staffId) => {
+    if (expandedStaffId === staffId) {
+      setExpandedStaffId(null);
+      return;
+    }
+
+    setExpandedStaffId(staffId);
+
+    if (!relationByStaffId[staffId]) {
+      await fetchStaffRelations(staffId);
+    }
   };
 
   return (
@@ -102,49 +119,143 @@ function StaffPage() {
                 <th>ID</th>
                 <th>Name</th>
                 <th>Position</th>
+                <th>Rota</th>
+                <th>Orders</th>
                 <th>Hourly Rate</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {staff.map((person) => (
-                <tr key={person.staff_id}>
-                  <td>{person.staff_id}</td>
-                  <td>{person.first_name} {person.last_name}</td>
-                  <td>{person.position}</td>
-                  <td>
-                    <div className="join">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className="input input-bordered input-sm join-item w-28"
-                        value={rateInputs[person.staff_id] ?? person.hourly_rate ?? ""}
-                        onChange={(e) => handleRateChange(person.staff_id, e.target.value)}
-                      />
-                      <button
-                        className="btn btn-sm join-item"
-                        onClick={() =>
-                          updateStaffRate(
-                            person.staff_id,
-                            rateInputs[person.staff_id] ?? person.hourly_rate
-                          )
-                        }
-                      >
-                        Save
-                      </button>
-                    </div>
-                  </td>
-                  <td>
-                    <button
-                      className="btn btn-sm btn-error btn-outline"
-                      onClick={() => deleteStaff(person.staff_id)}
-                    >
-                      <Trash2Icon className="size-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {staff.map((person) => {
+                const details = relationByStaffId[person.staff_id];
+                const isExpanded = expandedStaffId === person.staff_id;
+                const isDetailsLoading = relationLoadingByStaffId[person.staff_id];
+
+                return (
+                  <>
+                    <tr key={person.staff_id}>
+                      <td>{person.staff_id}</td>
+                      <td>{person.first_name} {person.last_name}</td>
+                      <td>{person.position}</td>
+                      <td>{person.rota_count ?? 0}</td>
+                      <td>{person.order_count ?? 0}</td>
+                      <td>
+                        <div className="join">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className="input input-bordered input-sm join-item w-28"
+                            value={rateInputs[person.staff_id] ?? person.hourly_rate ?? ""}
+                            onChange={(e) => handleRateChange(person.staff_id, e.target.value)}
+                          />
+                          <button
+                            className="btn btn-sm join-item"
+                            onClick={() =>
+                              updateStaffRate(
+                                person.staff_id,
+                                rateInputs[person.staff_id] ?? person.hourly_rate
+                              )
+                            }
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="btn btn-sm btn-outline"
+                            onClick={() => toggleDetails(person.staff_id)}
+                          >
+                            <ChevronsUpDownIcon className="size-4" />
+                            {isExpanded ? "Hide" : "Details"}
+                          </button>
+
+                          <button
+                            className="btn btn-sm btn-error btn-outline"
+                            onClick={() => deleteStaff(person.staff_id)}
+                          >
+                            <Trash2Icon className="size-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={7}>
+                          {isDetailsLoading ? (
+                            <div className="py-4">Loading staff relations...</div>
+                          ) : (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 py-2">
+                              <div className="border border-base-content/10 rounded-lg p-3">
+                                <h3 className="font-semibold mb-2">Rota (Shifts)</h3>
+                                {details?.rota?.length ? (
+                                  <div className="overflow-x-auto">
+                                    <table className="table table-xs">
+                                      <thead>
+                                        <tr>
+                                          <th>Work Date</th>
+                                          <th>Start</th>
+                                          <th>End</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {details.rota.map((shift) => (
+                                          <tr key={shift.rota_id}>
+                                            <td>{shift.work_date?.slice(0, 10) || "-"}</td>
+                                            <td>{shift.start_time ? new Date(shift.start_time).toLocaleString() : "-"}</td>
+                                            <td>{shift.end_time ? new Date(shift.end_time).toLocaleString() : "-"}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-base-content/70">No rota records found.</p>
+                                )}
+                              </div>
+
+                              <div className="border border-base-content/10 rounded-lg p-3">
+                                <h3 className="font-semibold mb-2">Orders Served</h3>
+                                {details?.orders?.length ? (
+                                  <div className="overflow-x-auto">
+                                    <table className="table table-xs">
+                                      <thead>
+                                        <tr>
+                                          <th>Order</th>
+                                          <th>Role</th>
+                                          <th>Service</th>
+                                          <th>Status</th>
+                                          <th>Created At</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {details.orders.map((orderRef) => (
+                                          <tr key={orderRef.row_id}>
+                                            <td>{orderRef.order_id}</td>
+                                            <td>{orderRef.role || "-"}</td>
+                                            <td>{orderRef.service_type || "-"}</td>
+                                            <td>{orderRef.status || "-"}</td>
+                                            <td>{orderRef.created_at ? new Date(orderRef.created_at).toLocaleString() : "-"}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-base-content/70">No order assignment records found.</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })}
             </tbody>
           </table>
         </div>
