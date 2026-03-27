@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import itemRoutes from "./routes/itemRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import staffRoutes from "./routes/staffRoutes.js";
+import ingredientRoutes from "./routes/ingredientRoutes.js";
 import { sql } from "./config/db.js";
 
 dotenv.config();
@@ -27,6 +28,7 @@ app.get("/api/meta/run-id", (_req, res) => {
 app.use("/api/items", itemRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/staff", staffRoutes);
+app.use("/api/ingredients", ingredientRoutes);
 
 async function testQuery() {
   try {

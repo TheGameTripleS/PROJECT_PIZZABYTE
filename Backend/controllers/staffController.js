@@ -1,5 +1,7 @@
 import { sql } from '../../Database/db.js';
 
+const ALLOWED_POSITIONS = ['waiter', 'chef', 'receptionist'];
+
 export const getStaff = async (_req, res) => {
 	try {
 		const staff = await sql`
@@ -7,6 +9,7 @@ export const getStaff = async (_req, res) => {
 				s.staff_id,
 				s.first_name,
 				s.last_name,
+				s.email,
 				s.position,
 				s.hourly_rate,
 				COUNT(DISTINCT r.rota_id) AS rota_count,
@@ -14,7 +17,7 @@ export const getStaff = async (_req, res) => {
 			FROM staff s
 			LEFT JOIN rota r ON r.staff_id = s.staff_id
 			LEFT JOIN order_staff os ON os.staff_id = s.staff_id
-			GROUP BY s.staff_id, s.first_name, s.last_name, s.position, s.hourly_rate
+			GROUP BY s.staff_id, s.first_name, s.last_name, s.email, s.position, s.hourly_rate
 			ORDER BY staff_id DESC
 		`;
 
@@ -74,7 +77,7 @@ export const getStaffRelations = async (req, res) => {
 
 	try {
 		const staff = await sql`
-			SELECT staff_id, first_name, last_name, position, hourly_rate
+			SELECT staff_id, first_name, last_name, email, position, hourly_rate
 			FROM staff
 			WHERE staff_id = ${staffId}
 		`;
@@ -124,20 +127,36 @@ export const getStaffRelations = async (req, res) => {
 };
 
 export const createStaff = async (req, res) => {
-	const { first_name, last_name, position, hourly_rate } = req.body;
+	const { first_name, last_name, email, position, hourly_rate } = req.body;
 
-	if (!first_name || !last_name || !position || hourly_rate === undefined || hourly_rate === null) {
+	if (!first_name || !last_name || !email || !position || hourly_rate === undefined || hourly_rate === null) {
 		return res.status(400).json({
 			success: false,
-			message: 'first_name, last_name, position and hourly_rate are required',
+			message: 'first_name, last_name, email, position and hourly_rate are required',
+		});
+	}
+
+	const normalizedPosition = String(position).toLowerCase();
+	if (!ALLOWED_POSITIONS.includes(normalizedPosition)) {
+		return res.status(400).json({
+			success: false,
+			message: 'position must be one of: waiter, chef, receptionist',
 		});
 	}
 
 	try {
+		const existing = await sql`
+			SELECT staff_id FROM staff WHERE email = ${email}
+		`;
+
+		if (existing.length > 0) {
+			return res.status(409).json({ success: false, message: 'Email already exists for another staff member' });
+		}
+
 		const created = await sql`
-			INSERT INTO staff (first_name, last_name, position, hourly_rate)
-			VALUES (${first_name}, ${last_name}, ${position}, ${hourly_rate})
-			RETURNING staff_id, first_name, last_name, position, hourly_rate
+			INSERT INTO staff (first_name, last_name, email, password, position, hourly_rate)
+			VALUES (${first_name}, ${last_name}, ${email}, NULL, ${normalizedPosition}, ${hourly_rate})
+			RETURNING staff_id, first_name, last_name, email, position, hourly_rate
 		`;
 
 		res.status(201).json({ success: true, data: created[0] });
@@ -149,18 +168,39 @@ export const createStaff = async (req, res) => {
 
 export const updateStaff = async (req, res) => {
 	const { staffId } = req.params;
-	const { first_name, last_name, position, hourly_rate } = req.body;
+	const { first_name, last_name, email, position, hourly_rate } = req.body;
+
+	if (position !== undefined && position !== null) {
+		const normalizedPosition = String(position).toLowerCase();
+		if (!ALLOWED_POSITIONS.includes(normalizedPosition)) {
+			return res.status(400).json({
+				success: false,
+				message: 'position must be one of: waiter, chef, receptionist',
+			});
+		}
+	}
 
 	try {
+		if (email !== undefined && email !== null && String(email).trim() !== '') {
+			const existing = await sql`
+				SELECT staff_id FROM staff WHERE email = ${email} AND staff_id <> ${staffId}
+			`;
+
+			if (existing.length > 0) {
+				return res.status(409).json({ success: false, message: 'Email already exists for another staff member' });
+			}
+		}
+
 		const updated = await sql`
 			UPDATE staff
 			SET
 				first_name = COALESCE(${first_name || null}, first_name),
 				last_name = COALESCE(${last_name || null}, last_name),
-				position = COALESCE(${position || null}, position),
+				email = COALESCE(${email || null}, email),
+				position = COALESCE(${position ? String(position).toLowerCase() : null}, position),
 				hourly_rate = COALESCE(${hourly_rate ?? null}, hourly_rate)
 			WHERE staff_id = ${staffId}
-			RETURNING staff_id, first_name, last_name, position, hourly_rate
+			RETURNING staff_id, first_name, last_name, email, position, hourly_rate
 		`;
 
 		if (updated.length === 0) {
@@ -181,7 +221,7 @@ export const deleteStaff = async (req, res) => {
 		const deleted = await sql`
 			DELETE FROM staff
 			WHERE staff_id = ${staffId}
-			RETURNING staff_id, first_name, last_name, position, hourly_rate
+			RETURNING staff_id, first_name, last_name, email, position, hourly_rate
 		`;
 
 		if (deleted.length === 0) {

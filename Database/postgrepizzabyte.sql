@@ -6,6 +6,8 @@ CREATE TABLE staff (
     staff_id      INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     first_name    VARCHAR(50),
     last_name     VARCHAR(50),
+    email         VARCHAR(100),
+    password      VARCHAR(255),
     position      VARCHAR(50),
     hourly_rate   NUMERIC(10,2)
 );

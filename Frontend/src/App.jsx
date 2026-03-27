@@ -4,6 +4,7 @@ import ProtectedRoute from "./components/ProtectedRoute"
 import Home from "./pages/Home"
 import AdminHomePage from "./pages/AdminHomePage"
 import AdminItemPage from "./pages/AdminItemPage"
+import IngredientsPage from "./pages/IngredientsPage"
 import ItemPage from "./pages/ItemPage"
 import StaffPage from "./pages/StaffPage"
 import { Routes, Route } from "react-router-dom"
@@ -70,6 +71,18 @@ function App() {
               <>
                 <NavBar />
                 <StaffPage />
+              </>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/ingredients"
+          element={
+            <ProtectedRoute>
+              <>
+                <NavBar />
+                <IngredientsPage />
               </>
             </ProtectedRoute>
           }

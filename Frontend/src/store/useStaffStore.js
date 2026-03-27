@@ -14,6 +14,7 @@ export const useStaffStore = create((set, get) => ({
   formData: {
     first_name: "",
     last_name: "",
+    email: "",
     position: "",
     hourly_rate: "",
   },
@@ -25,6 +26,7 @@ export const useStaffStore = create((set, get) => ({
       formData: {
         first_name: "",
         last_name: "",
+        email: "",
         position: "",
         hourly_rate: "",
       },

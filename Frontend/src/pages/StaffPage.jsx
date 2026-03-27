@@ -56,7 +56,7 @@ function StaffPage() {
       </div>
 
       <form onSubmit={addStaff} className="card bg-base-100 shadow-sm border border-base-content/10 mb-8">
-        <div className="card-body grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="card-body grid grid-cols-1 md:grid-cols-5 gap-3">
           <input
             type="text"
             className="input input-bordered"
@@ -74,13 +74,24 @@ function StaffPage() {
             required
           />
           <input
-            type="text"
+            type="email"
             className="input input-bordered"
-            placeholder="Position (Chef, Waiter...)"
+            placeholder="Email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            required
+          />
+          <select
+            className="select select-bordered"
             value={formData.position}
             onChange={(e) => setFormData({ ...formData, position: e.target.value })}
             required
-          />
+          >
+            <option value="" disabled>Select position</option>
+            <option value="waiter">Waiter</option>
+            <option value="chef">Chef</option>
+            <option value="receptionist">Receptionist</option>
+          </select>
           <div className="join">
             <span className="join-item btn btn-disabled"><IndianRupeeIcon className="size-4" /></span>
             <input
@@ -95,7 +106,7 @@ function StaffPage() {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary md:col-span-4" disabled={loading}>
+          <button type="submit" className="btn btn-primary md:col-span-5" disabled={loading}>
             Add Staff Member
           </button>
         </div>
@@ -118,6 +129,7 @@ function StaffPage() {
               <tr>
                 <th>ID</th>
                 <th>Name</th>
+                <th>Email</th>
                 <th>Position</th>
                 <th>Rota</th>
                 <th>Orders</th>
@@ -136,6 +148,7 @@ function StaffPage() {
                     <tr key={person.staff_id}>
                       <td>{person.staff_id}</td>
                       <td>{person.first_name} {person.last_name}</td>
+                      <td>{person.email || "-"}</td>
                       <td>{person.position}</td>
                       <td>{person.rota_count ?? 0}</td>
                       <td>{person.order_count ?? 0}</td>
@@ -184,7 +197,7 @@ function StaffPage() {
 
                     {isExpanded && (
                       <tr>
-                        <td colSpan={7}>
+                        <td colSpan={8}>
                           {isDetailsLoading ? (
                             <div className="py-4">Loading staff relations...</div>
                           ) : (
