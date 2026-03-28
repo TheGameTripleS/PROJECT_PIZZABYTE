@@ -9,7 +9,7 @@ function NavBar() {
   const navigate = useNavigate()
   const location = useLocation()
   const isAdminHome = location.pathname === "/admin"
-  const shouldShowHome = location.pathname.startsWith("/staff") || location.pathname.startsWith("/admin/items") || location.pathname.startsWith("/item/") || location.pathname.startsWith("/ingredients")
+  const shouldShowHome = location.pathname.startsWith("/staff") || location.pathname.startsWith("/admin/items") || location.pathname.startsWith("/item/") || location.pathname.startsWith("/ingredients") || location.pathname.startsWith("/expenses")
 
   const handleLogout = () => {
     adminLogout()

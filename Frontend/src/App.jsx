@@ -4,6 +4,7 @@ import ProtectedRoute from "./components/ProtectedRoute"
 import Home from "./pages/Home"
 import AdminHomePage from "./pages/AdminHomePage"
 import AdminItemPage from "./pages/AdminItemPage"
+import ExpensesPage from "./pages/ExpensesPage"
 import IngredientsPage from "./pages/IngredientsPage"
 import ItemPage from "./pages/ItemPage"
 import StaffPage from "./pages/StaffPage"
@@ -83,6 +84,18 @@ function App() {
               <>
                 <NavBar />
                 <IngredientsPage />
+              </>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/expenses"
+          element={
+            <ProtectedRoute>
+              <>
+                <NavBar />
+                <ExpensesPage />
               </>
             </ProtectedRoute>
           }
