@@ -8,6 +8,10 @@ import cookieParser from "cookie-parser";
 // 1. Import Routes (Notice the .js extensions)
 import itemRoutes from "./routes/itemRoutes.js"; // From server.js
 import indexRouter from "./routes/index.route.js"; // From index.mjs
+import authRoutes from "./routes/authRoutes.js";
+import staffRoutes from "./routes/staffRoutes.js";
+import ingredientRoutes from "./routes/ingredientRoutes.js";
+import expenseRoutes from "./routes/expenseRoutes.js";
 
 // 2. Import Database Connection
 import { sql } from "../Database/db.js"; // From server.js
@@ -40,6 +44,10 @@ app.use(morgan("dev"));  // Request logging (from server.js)
 // 5. Apply Routes
 app.use("/api/items", itemRoutes); // Your custom item routes
 app.use("/", indexRouter);         // Your users, captcha, and shortener routes
+app.use("/api/auth", authRoutes);
+app.use("/api/staff", staffRoutes);
+app.use("/api/ingredients", ingredientRoutes);
+app.use("/api/expenses", expenseRoutes);
 
 // 6. Global 404 Handler (from index.mjs)
 app.use((req, res) => {
@@ -52,7 +60,6 @@ async function testQuery() {
     const result = await sql`
         SELECT
             o.order_id,
-            oi.total_cost,
             oi.item_quantity,
             i.category,
             i.item_name,

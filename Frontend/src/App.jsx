@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Route, Routes, Navigate } from "react-router-dom";
+import { Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
 // Original Layout & Components
@@ -58,6 +58,7 @@ function App() {
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   // New States for Admin and Theme
   const [isAdmin, setIsAdmin] = useState(false);
@@ -134,7 +135,13 @@ function App() {
       setUser(null);
       hideMenu();
       ResetLocation();
-      localStorage.clear();
+      
+      // Use removeItem instead of .clear() so you don't delete your theme!
+      localStorage.removeItem("loggedIn");
+      localStorage.removeItem("isAdmin");
+
+      // FORCE REDIRECT TO HOME PAGE
+      navigate("/"); // <--- ADD THIS LINE
     }
     return response;
   };
@@ -311,9 +318,13 @@ function App() {
             <Route path="/refunds" element={<RefundsPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
+            
+            {/* ADD THIS: Kicks non-admins out of admin URLs smoothly instead of 404ing */}
+            <Route path="/admin/*" element={<Navigate to="/" replace />} />
+
+            {/* Catch-all 404 */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
-
           <Footer />
         </>
       )}
