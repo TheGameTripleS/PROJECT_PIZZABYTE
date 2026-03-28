@@ -6,8 +6,6 @@ CREATE TABLE staff (
     staff_id      INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     first_name    VARCHAR(50),
     last_name     VARCHAR(50),
-    email         VARCHAR(100),
-    password      VARCHAR(255),
     position      VARCHAR(50),
     hourly_rate   NUMERIC(10,2)
 );
@@ -116,6 +114,17 @@ CREATE TABLE orders (
     FOREIGN KEY (add_id) REFERENCES address(add_id),
     FOREIGN KEY (rota_id) REFERENCES rota(rota_id),
     FOREIGN KEY (coupon_id) REFERENCES coupons(coupon_id)
+);
+
+-- Handles 'Served' relationship where Staff = Waiter, Chef, etc.
+CREATE TABLE order_staff (
+    row_id   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    order_id INT NOT NULL,
+    staff_id INT NOT NULL,
+    role     VARCHAR(50),
+    
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    FOREIGN KEY (staff_id) REFERENCES staff(staff_id)
 );
 
 CREATE TABLE order_items (

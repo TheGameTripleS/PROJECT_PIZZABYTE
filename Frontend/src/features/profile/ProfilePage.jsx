@@ -1,0 +1,383 @@
+import React, { useEffect, useState } from "react";
+import ResetLocation from "../../utils/ResetLocation";
+import { useNavigate } from "react-router-dom";
+import validateForm from "../../utils/validate-form";
+import "./assets/profile.css";
+import { motion } from "framer-motion";
+import { slideInLeft } from "../../utils/animations";
+import { deleteUser } from "./api/deleteUser";
+
+const ProfilePage = ({ currentUser, handleLogoutUser, handleUpdateUser }) => {
+  const [editForm, setEditForm] = useState(false);
+  const [formValue, setFormValue] = useState({
+    email: "",
+    password: "",
+    fullname: "",
+    address1: "",
+    address2: "",
+    zipcode: "",
+    number: "",
+  });
+  const [formErrors, setFormErrors] = useState({});
+  const [formError, setFormError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [confirmationModal, setConfirmationModal] = useState(false);
+  const navigate = useNavigate();
+  const validate = validateForm("profile");
+  const toggleForm = () => {
+    setEditForm(!editForm);
+    setFormError("");
+    setFormErrors({});
+    setFormValue({
+      email: "",
+      password: "",
+      fullname: "",
+      address1: "",
+      address2: "",
+      zipcode: "",
+      number: "",
+    });
+    ResetLocation();
+  };
+
+  const handleValidation = (e) => {
+    const { name, value } = e.target;
+    setFormValue({ ...formValue, [name]: value });
+  };
+
+  const handleSubmit = async (e) => {
+    setLoading(true);
+    setFormError("");
+    e.preventDefault();
+    setFormErrors(validate(formValue));
+    window.scrollTo(0, 0);
+    if (Object.keys(validate(formValue)).length > 0) {
+      setLoading(false);
+      return;
+    } else {
+      const updatedFields = {};
+      for (const fieldName of Object.keys(formValue)) {
+        if (formValue[fieldName] !== "" && formValue[fieldName] !== currentUser[fieldName]) {
+          updatedFields[fieldName] = formValue[fieldName];
+        } else {
+          updatedFields[fieldName] = currentUser[fieldName];
+        }
+      }
+
+      const result = await handleUpdateUser(updatedFields);
+      if (result.success) {
+        setEditForm(false);
+        setFormValue({
+          email: "",
+          password: "",
+          fullname: "",
+          address1: "",
+          address2: "",
+          zipcode: "",
+          number: "",
+        });
+      } else {
+        setFormError(result.message);
+      }
+      setLoading(false);
+    }
+  };
+
+  const confirmDeleteUser = () => {
+    ResetLocation();
+    setConfirmationModal(true);
+  };
+  const handleDeleteUser = async (id) => {
+    const response = await deleteUser(id);
+    if (response.success) {
+      const isLoggedOut = await handleLogoutUser();
+      if (isLoggedOut.success) {
+        setFormError("");
+        navigate("/");
+      } else {
+        setFormError(isLoggedOut.message);
+      }
+    } else {
+      setFormError(response.message);
+      setConfirmationModal(false);
+    }
+  };
+
+  useEffect(() => {
+    document.title = "Profile | PizzaByte";
+  }, []);
+  return (
+    <motion.main
+      className="profile"
+      initial={slideInLeft.initial}
+      whileInView={slideInLeft.whileInView}
+      exit={slideInLeft.exit}
+      transition={slideInLeft.transition}>
+      <h2>Profile information</h2>
+      <p>Personal details and application</p>
+      {loading ? (
+        <div role="status" className="loader">
+          <p>Almost there...</p>
+          <img
+            alt="Processing request"
+            src="https://media0.giphy.com/media/L05HgB2h6qICDs5Sms/giphy.gif?cid=ecf05e472hf2wk1f2jou3s5fcnx1vek6ggnfcvhsjbeh7v5u&ep=v1_stickers_search&rid=giphy.gif&ct=s"
+          />
+        </div>
+      ) : editForm ? (
+        <form className="profile__form" onSubmit={handleSubmit}>
+          {formError && (
+            <span aria-live="polite" className="input-validation-error">
+              {formError}
+            </span>
+          )}
+          <hr aria-hidden="true" />
+          <label htmlFor="email" className="profile__form__info">
+            Email
+            <input
+              name="email"
+              id="email"
+              type="text"
+              value={formValue.email}
+              placeholder={currentUser.email}
+              autoComplete="email"
+              onChange={handleValidation}
+              aria-describedby="email-error"
+            />
+          </label>
+
+          <span id="email-error" aria-live="polite" className="input-validation-error">
+            {formErrors.email}
+          </span>
+          <hr aria-hidden="true" />
+
+          <label htmlFor="password" className="profile__form__info">
+            Password
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              value={formValue.password}
+              placeholder="********"
+              onChange={handleValidation}
+              aria-describedby="password-error"
+            />
+          </label>
+
+          <span aria-live="polite" id="password-error" className="input-validation-error">
+            {formErrors.password}
+          </span>
+          <hr aria-hidden="true" />
+
+          <label htmlFor="fullname" className="profile__form__info">
+            Fullname
+            <input
+              name="fullname"
+              id="fullname"
+              type="text"
+              autoComplete="name"
+              value={formValue.fullname}
+              placeholder={currentUser.fullname}
+              onChange={handleValidation}
+              aria-describedby="fullname-error"
+            />
+          </label>
+
+          <span aria-live="polite" id="fullname-error" className="input-validation-error">
+            {formErrors.fullname}
+          </span>
+          <hr aria-hidden="true" />
+
+          <label htmlFor="address1" className="profile__form__info">
+            Address Line 1
+            <input
+              id="address1"
+              name="address1"
+              type="text"
+              autoComplete="billing address-line1"
+              value={formValue.address1}
+              placeholder={currentUser.address1 !== null ? currentUser.address1 : "Add address line 1..."}
+              onChange={handleValidation}
+              aria-describedby="address1-error"
+            />
+          </label>
+
+          <span aria-live="polite" id="address1-error" className="input-validation-error">
+            {formErrors.address1}
+          </span>
+          <hr aria-hidden="true" />
+
+          <label htmlFor="address2" className="profile__form__info">
+            Address Line 2
+            <input
+              id="address2"
+              name="address2"
+              type="text"
+              autoComplete="billing address-line2"
+              value={formValue.address2}
+              placeholder={currentUser.address2 !== null ? currentUser.address2 : "Add address line 2..."}
+              onChange={handleValidation}
+              aria-describedby="address2-error"
+            />
+          </label>
+
+          <span aria-live="polite" id="address2-error" className="input-validation-error">
+            {formErrors.address2}
+          </span>
+          <hr aria-hidden="true" />
+
+          <label htmlFor="zipcode" className="profile__form__info">
+            Zip Code
+            <input
+              id="zipcode"
+              name="zipcode"
+              type="text"
+              autoComplete="billing postal-code"
+              value={formValue.zipcode}
+              placeholder={currentUser.zipcode !== null ? currentUser.zipcode : "Add zip code..."}
+              onChange={handleValidation}
+              aria-describedby="zipcode-error"
+            />
+          </label>
+
+          <span aria-live="polite" id="zipcode-error" className="input-validation-error">
+            {formErrors.zipcode}
+          </span>
+          <hr aria-hidden="true" />
+
+          <label htmlFor="number" className="profile__form__info">
+            Number
+            <input
+              id="number"
+              name="number"
+              type="text"
+              value={formValue.number}
+              autoComplete="mobile tel"
+              placeholder={currentUser.number !== null ? currentUser.number : "Add number..."}
+              onChange={handleValidation}
+              aria-describedby="number-error"
+            />
+          </label>
+
+          <span aria-live="polite" id="number-error" className="input-validation-error">
+            {formErrors.number}
+          </span>
+          <hr aria-hidden="true" />
+          <div className="profile__actions">
+            <button
+              aria-label="Cancel editing"
+              type="button"
+              className="active-button-style"
+              onClick={() => {
+                toggleForm();
+              }}>
+              Cancel edit
+            </button>
+            <button type="submit" aria-label="Save changes" className="passive-button-style">
+              Save profile
+            </button>
+          </div>
+        </form>
+      ) : (
+        <React.Fragment>
+          <section className="profile__info" aria-labelledby="profile-title">
+            <h3 id="profile-title" className="visually-hidden">
+              Profile Information
+            </h3>
+            {formError && (
+              <span aria-live="polite" className="input-validation-error">
+                {formError}
+              </span>
+            )}
+            <hr aria-hidden="true" />
+
+            <div className="profile__info__section">
+              <h3>Email</h3>
+              <p>{currentUser?.email || ""}</p>
+            </div>
+            <hr aria-hidden="true" />
+            <div className="profile__info__section">
+              <h3>Password</h3>
+              <p>*********</p>
+            </div>
+            <hr aria-hidden="true" />
+            <div className="profile__info__section">
+              <h3>Fullname</h3>
+              <p>{currentUser?.fullname || ""}</p>
+            </div>
+            <hr aria-hidden="true" />
+            <div className="profile__info__section">
+              <h3>Address Line 1</h3>
+              <p>{currentUser?.address1 ? currentUser?.address1 : " N/A"}</p>
+            </div>
+            <hr aria-hidden="true" />
+            <div className="profile__info__section">
+              <h3>Address Line 2</h3>
+              <p>{currentUser?.address2 ? currentUser?.address2 : " N/A"}</p>
+            </div>
+            <hr aria-hidden="true" />
+            <div className="profile__info__section">
+              <h3>Zip Code</h3>
+              <p>{currentUser?.zipcode ? currentUser?.zipcode : " N/A"}</p>
+            </div>
+            <hr aria-hidden="true" />
+            <div className="profile__info__section">
+              <h3>Number</h3>
+              <p>{currentUser?.number ? currentUser?.number : "N/A"}</p>
+            </div>
+            <hr aria-hidden="true" />
+          </section>
+          <div className="profile__actions">
+            <button
+              type="button"
+              className="active-button-style"
+              onClick={() => {
+                toggleForm();
+              }}
+              aria-label="Edit profile">
+              Edit profile
+            </button>
+            <button
+              type="button"
+              className="passive-button-style"
+              onClick={() => confirmDeleteUser()}
+              aria-label="Delete account">
+              Delete account
+            </button>
+          </div>
+        </React.Fragment>
+      )}
+      {confirmationModal && (
+        <section className="profile__delete-modal">
+          <div className="profile__delete-window">
+            <h3>Delete account</h3>
+            <p>
+              Are you sure you want to delete your account? This action cannot be reversed and all the data will be lost
+            </p>
+            <div>
+              <button
+                type="button"
+                className="profile__delete-confirm"
+                onClick={() => handleDeleteUser(currentUser.id)}
+                aria-label="Confirm account deletion">
+                Confirm
+              </button>
+              <button
+                type="button"
+                className="profile__delete-cancel"
+                onClick={() => {
+                  setConfirmationModal(false);
+                  ResetLocation();
+                }}
+                aria-label="Cancel account deletion">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+    </motion.main>
+  );
+};
+
+export default ProfilePage;

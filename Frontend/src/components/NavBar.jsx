@@ -1,64 +1,56 @@
-import { Link } from "react-router-dom"
-import { HomeIcon, LogOutIcon } from "lucide-react"
+import { Link, useResolvedPath } from "react-router-dom"
+import { ShoppingCartIcon, LogOut } from "lucide-react" // <-- 1. Import LogOut icon
 import ThemeSelector from "./ThemeSelector"
-import { useAdminStore } from "../store/useAdminStore"
-import { useLocation, useNavigate } from "react-router-dom"
 
-function NavBar() {
-  const { adminLogout } = useAdminStore()
-  const navigate = useNavigate()
-  const location = useLocation()
-  const isAdminHome = location.pathname === "/admin"
-  const shouldShowHome = location.pathname.startsWith("/staff") || location.pathname.startsWith("/admin/items") || location.pathname.startsWith("/item/") || location.pathname.startsWith("/ingredients") || location.pathname.startsWith("/expenses")
-
-  const handleLogout = () => {
-    adminLogout()
-    navigate("/")
-  }
+// 2. Accept the handleLogout prop
+function NavBar({ handleLogout }) {
+  const {pathname} = useResolvedPath()
+  const isHomePage = pathname === "/"
 
   return (
     <div className="bg-base-100/80 backdrop-blur-lg border-b border-base-content/10 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto">
-        <div className="navbar px-4 min-h-[4rem] justify-between">
-
+         <div className="navbar px-4 min-h-[4rem] justify-between">
           {/* LOGO */}
           <div className="flex-1 lg:flex-none">
-            <Link to="/admin" className="hover:opacity-80 transition-opacity">
+            <Link to="/" className="hover:opacity-80 transition-opacity">
               <div className="flex items-center gap-2">
-                <img src="/images/logo.png" alt="PIZZAbyte" className="h-9 w-9 object-contain" />
-                <span className="font-semibold font-mono tracking-widest text-2xl bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
-                  PIZZAbyte
+                <ShoppingCartIcon className="size-9 text-primary" />
+                <span 
+                  className="font-semibold font-mono tracking-widest text-2xl
+                    bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary"
+                >
+                  POSTGRESTORE
                 </span>
               </div>
             </Link>
           </div>
-
           {/* RIGHT SECTION */}
-          <div className="flex items-center gap-2">
-            {shouldShowHome && (
-              <button
-                className="btn btn-ghost btn-sm gap-2"
-                onClick={() => navigate("/admin")}
-                title="Home"
-              >
-                <HomeIcon className="size-4" />
-                <span className="hidden sm:inline">Home</span>
-              </button>
+          <div className="flex items-center gap-4">
+            <ThemeSelector />
+
+            {isHomePage && (
+              <div className="indicator">
+                <div className="p-2 rounded-full  hover:bg-base-200 transition-colors">
+                  <ShoppingCartIcon className="size-5" />
+                  <span className="badge badge-sm badge-primary indicator-item">8</span>
+                </div>
+              </div>
             )}
 
-            <ThemeSelector />
-            {isAdminHome && (
-              <button
-                className="btn btn-ghost btn-sm gap-2"
+            {/* 3. ADD LOGOUT BUTTON */}
+            {handleLogout && (
+              <button 
                 onClick={handleLogout}
+                className="btn btn-ghost btn-circle text-error hover:bg-error/20 transition-colors ml-2"
                 title="Logout"
               >
-                <LogOutIcon className="size-4" />
-                <span className="hidden sm:inline">Logout</span>
+                <LogOut className="size-5" />
               </button>
             )}
+
           </div>
-        </div>
+         </div>
       </div>
     </div>
   )

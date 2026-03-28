@@ -3,12 +3,11 @@ import { EditIcon, Trash2Icon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useItemStore } from "../store/useItemStore";
 
-function ItemCard({ item }) {
-  console.log(item);
-  
+function ItemCard({ item, renderActions }) {
   const { deleteItem } = useItemStore();
+
   const getBadgeColor = (status) => {
-    switch (status) {
+    switch (status?.trim().toLowerCase()) {
       case "continued":
         return "badge-success text-white";
       case "discontinued":
@@ -21,9 +20,18 @@ function ItemCard({ item }) {
   };
 
   return (
-    <div className="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300">
-      {/* ITEM IMAGE */}
-      <figure className="relative pt-[56.25%]">
+    /*
+      "flex flex-col h-full" — card stretches to fill its grid cell height,
+      which fixes the admin overlap issue where short cards collapsed into neighbors.
+      Removed shadow-xl in favour of a clean border.
+    */
+    <div className="card bg-base-100 border border-base-200 hover:border-base-300 transition-all duration-300 flex flex-col h-full">
+
+      {/* ITEM IMAGE — paddingTop aspect-ratio trick keeps all images the same height */}
+      <figure
+        className="relative w-full overflow-hidden bg-base-200"
+        style={{ paddingTop: "72%" }}
+      >
         {item.image_url ? (
           <img
             src={item.image_url}
@@ -31,53 +39,82 @@ function ItemCard({ item }) {
             className="absolute top-0 left-0 w-full h-full object-cover"
           />
         ) : (
-          <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center text-gray-500 font-medium">
+          <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center text-base-content/40 text-sm font-medium">
             No Image Yet
           </div>
         )}
       </figure>
 
-      <div className="card-body">
-        {/* ITEM INFO */}
-        <h2 className="card-title text-lg font-semibold flex justify-between items-start">
-          <span>{item.item_name}</span>
-          {/* Dynamic Status Badge */}
-          <div className={`badge badge-sm uppercase text-[10px] font-bold ${getBadgeColor(item.status)}`}>
-            {item.status || "continued"}
-          </div>
-        </h2>
-        
-        <p className="text-2xl font-bold text-primary">
-          Tk{Number(item.item_price).toFixed(2)}
-        </p>
+      {/*
+        "flex flex-col flex-1" — body grows to fill remaining card height
+        so the actions row is always pinned to the bottom regardless of
+        how long the item name is.
+      */}
+      <div className="flex flex-col flex-1 p-5 gap-3">
 
-        {/* CATEGORY & SIZE BADGES */}
-        <div className="flex flex-wrap gap-2 mt-1 mb-2">
+        {/* ROW 1: Name + Price on the same line, price never wraps */}
+        <div className="flex justify-between items-start gap-3">
+          <h2 className="text-base font-semibold leading-snug line-clamp-2 flex-1">
+            {item.item_name}
+          </h2>
+          <span className="text-base font-bold text-primary whitespace-nowrap shrink-0">
+            ${Number(item.item_price).toFixed(2)}
+          </span>
+        </div>
+
+        {/* ROW 2: Category + Size badges always visible; Status only in admin */}
+        <div className="flex flex-wrap gap-1.5 items-center" style={{ minHeight: "1.5rem" }}>
           {item.category && (
-            <span className="badge badge-ghost badge-sm font-medium text-base-content/70">
+            <span className="badge badge-ghost badge-sm font-medium">
               {item.category}
             </span>
           )}
           {item.size && (
-            <span className="badge badge-ghost badge-sm font-medium text-base-content/70">
+            <span className="badge badge-ghost badge-sm font-medium">
               {item.size}
+            </span>
+          )}
+          {!renderActions && (
+            <span
+              className={`badge badge-sm uppercase font-bold ml-auto ${getBadgeColor(item.status)}`}
+              style={{ fontSize: "10px" }}
+            >
+              {item.status || "continued"}
             </span>
           )}
         </div>
 
-        {/* CARD ACTIONS */}
-        <div className="card-actions justify-end mt-4">
-          <Link to={`/item/${item.sku}`} className="btn btn-sm btn-info btn-outline">
-            <EditIcon className="size-4" />
-          </Link>
+        {/* DIVIDER */}
+        <div className="border-t border-base-200" />
 
-          <button
-            className="btn btn-sm btn-error  btn-outline"
-            onClick={() => deleteItem(item.sku)}
-          >
-            <Trash2Icon className="size-4" />
-          </button>
+        {/*
+          ROW 3: Actions pinned to bottom via "mt-auto".
+          Wrapping renderActions in "w-full" prevents CustomerItemCardActions
+          (which is itself flex w-full) from overflowing the card edge.
+        */}
+        <div className="mt-auto w-full min-w-0 overflow-hidden">
+          {renderActions ? (
+            <div className="w-full min-w-0 overflow-hidden">
+              {renderActions(item)}
+            </div>
+          ) : (
+            <div className="flex justify-between items-center">
+              <Link
+                to={`/item/${item.sku}`}
+                className="btn btn-sm btn-info btn-outline"
+              >
+                <EditIcon className="size-4" />
+              </Link>
+              <button
+                className="btn btn-sm btn-error btn-outline"
+                onClick={() => deleteItem(item.sku)}
+              >
+                <Trash2Icon className="size-4" />
+              </button>
+            </div>
+          )}
         </div>
+
       </div>
     </div>
   );
