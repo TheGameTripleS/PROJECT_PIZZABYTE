@@ -55,7 +55,7 @@ export const useStaffStore = create((set, get) => ({
 
     try {
       const response = await axios.get(`${BASE_URL}/api/staff/${staffId}/relations`);
-      const details = response.data?.data || { rota: [], orders: [], summary: { rota_count: 0, order_count: 0 } };
+      const details = response.data?.data || { rota: [], summary: { rota_count: 0 } };
 
       set((prev) => ({
         relationByStaffId: {

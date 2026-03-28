@@ -12,11 +12,9 @@ export const getStaff = async (_req, res) => {
 				s.email,
 				s.position,
 				s.hourly_rate,
-				COUNT(DISTINCT r.rota_id) AS rota_count,
-				COUNT(DISTINCT os.row_id) AS order_count
+				COUNT(DISTINCT r.rota_id) AS rota_count
 			FROM staff s
 			LEFT JOIN rota r ON r.staff_id = s.staff_id
-			LEFT JOIN order_staff os ON os.staff_id = s.staff_id
 			GROUP BY s.staff_id, s.first_name, s.last_name, s.email, s.position, s.hourly_rate
 			ORDER BY staff_id DESC
 		`;
@@ -46,32 +44,6 @@ export const getStaffRota = async (req, res) => {
 	}
 };
 
-export const getStaffOrders = async (req, res) => {
-	const { staffId } = req.params;
-
-	try {
-		const orders = await sql`
-			SELECT
-				os.row_id,
-				os.order_id,
-				os.staff_id,
-				os.role,
-				o.created_at,
-				o.status,
-				o.service_type
-			FROM order_staff os
-			LEFT JOIN orders o ON o.order_id = os.order_id
-			WHERE os.staff_id = ${staffId}
-			ORDER BY o.created_at DESC
-		`;
-
-		res.status(200).json({ success: true, data: orders });
-	} catch (error) {
-		console.error('Error in getStaffOrders function:', error);
-		res.status(500).json({ success: false, message: 'Internal server error' });
-	}
-};
-
 export const getStaffRelations = async (req, res) => {
 	const { staffId } = req.params;
 
@@ -93,30 +65,13 @@ export const getStaffRelations = async (req, res) => {
 			ORDER BY work_date DESC, start_time DESC
 		`;
 
-		const orders = await sql`
-			SELECT
-				os.row_id,
-				os.order_id,
-				os.staff_id,
-				os.role,
-				o.created_at,
-				o.status,
-				o.service_type
-			FROM order_staff os
-			LEFT JOIN orders o ON o.order_id = os.order_id
-			WHERE os.staff_id = ${staffId}
-			ORDER BY o.created_at DESC
-		`;
-
 		res.status(200).json({
 			success: true,
 			data: {
 				staff: staff[0],
 				rota,
-				orders,
 				summary: {
 					rota_count: rota.length,
-					order_count: orders.length,
 				},
 			},
 		});
@@ -145,6 +100,14 @@ export const createStaff = async (req, res) => {
 	}
 
 	try {
+		await sql`
+			SELECT setval(
+				pg_get_serial_sequence('staff', 'staff_id'),
+				COALESCE((SELECT MAX(staff_id) FROM staff), 1),
+				true
+			)
+		`;
+
 		const existing = await sql`
 			SELECT staff_id FROM staff WHERE email = ${email}
 		`;

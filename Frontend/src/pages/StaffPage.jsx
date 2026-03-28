@@ -132,7 +132,6 @@ function StaffPage() {
                 <th>Email</th>
                 <th>Position</th>
                 <th>Rota</th>
-                <th>Orders</th>
                 <th>Hourly Rate</th>
                 <th>Actions</th>
               </tr>
@@ -151,7 +150,6 @@ function StaffPage() {
                       <td>{person.email || "-"}</td>
                       <td>{person.position}</td>
                       <td>{person.rota_count ?? 0}</td>
-                      <td>{person.order_count ?? 0}</td>
                       <td>
                         <div className="join">
                           <input
@@ -197,11 +195,11 @@ function StaffPage() {
 
                     {isExpanded && (
                       <tr>
-                        <td colSpan={8}>
+                        <td colSpan={7}>
                           {isDetailsLoading ? (
                             <div className="py-4">Loading staff relations...</div>
                           ) : (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 py-2">
+                            <div className="py-2">
                               <div className="border border-base-content/10 rounded-lg p-3">
                                 <h3 className="font-semibold mb-2">Rota (Shifts)</h3>
                                 {details?.rota?.length ? (
@@ -227,38 +225,6 @@ function StaffPage() {
                                   </div>
                                 ) : (
                                   <p className="text-sm text-base-content/70">No rota records found.</p>
-                                )}
-                              </div>
-
-                              <div className="border border-base-content/10 rounded-lg p-3">
-                                <h3 className="font-semibold mb-2">Orders Served</h3>
-                                {details?.orders?.length ? (
-                                  <div className="overflow-x-auto">
-                                    <table className="table table-xs">
-                                      <thead>
-                                        <tr>
-                                          <th>Order</th>
-                                          <th>Role</th>
-                                          <th>Service</th>
-                                          <th>Status</th>
-                                          <th>Created At</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {details.orders.map((orderRef) => (
-                                          <tr key={orderRef.row_id}>
-                                            <td>{orderRef.order_id}</td>
-                                            <td>{orderRef.role || "-"}</td>
-                                            <td>{orderRef.service_type || "-"}</td>
-                                            <td>{orderRef.status || "-"}</td>
-                                            <td>{orderRef.created_at ? new Date(orderRef.created_at).toLocaleString() : "-"}</td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                ) : (
-                                  <p className="text-sm text-base-content/70">No order assignment records found.</p>
                                 )}
                               </div>
                             </div>

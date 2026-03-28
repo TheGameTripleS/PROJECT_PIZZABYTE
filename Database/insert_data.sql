@@ -1,7 +1,7 @@
 -- =========================================================
 -- 0. CLEANUP (RESET EVERYTHING)
 -- =========================================================
--- TRUNCATE TABLE payment, order_items, order_staff, stock_log, recipe, orders, customers, rota, coupons, item, ingredients, staff, address RESTART IDENTITY CASCADE;
+-- TRUNCATE TABLE payment, order_items, stock_log, recipe, orders, customers, rota, coupons, item, ingredients, staff, address RESTART IDENTITY CASCADE;
 
 -- =========================================================
 -- PHASE 1: STORE SETUP
@@ -75,10 +75,7 @@ INSERT INTO orders (cust_id, add_id, rota_id, created_at, status, service_type, 
 INSERT INTO order_items (order_id, item_id, item_quantity, total_price) VALUES
 (1, 2, 2, 36.00); 
 
--- 11. ASSIGN STAFF ROLES (The Change!)
--- Gordon cooks it, but Sarah (Waiter) grabs the keys and delivers it.
-INSERT INTO order_staff (order_id, staff_id, role) VALUES
-(1, 1, 'Chef');            -- Gordon cooked it
+-- 11. ASSIGN STAFF ROLES (Removed)
 
 -- 12. Process Payment
 INSERT INTO payment (order_id, amount, status, method) VALUES

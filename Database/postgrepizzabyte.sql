@@ -118,17 +118,6 @@ CREATE TABLE orders (
     FOREIGN KEY (coupon_id) REFERENCES coupons(coupon_id)
 );
 
--- Handles 'Served' relationship where Staff = Waiter, Chef, etc.
-CREATE TABLE order_staff (
-    row_id   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    order_id INT NOT NULL,
-    staff_id INT NOT NULL,
-    role     VARCHAR(50),
-    
-    FOREIGN KEY (order_id) REFERENCES orders(order_id),
-    FOREIGN KEY (staff_id) REFERENCES staff(staff_id)
-);
-
 CREATE TABLE order_items (
     row_id        INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     order_id      INT NOT NULL,
