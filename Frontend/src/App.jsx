@@ -150,7 +150,7 @@ function App() {
             Otherwise, show the standard PizzaByte Storefront.
           */}
       {isAdmin ? (
-        <div className="min-h-screen transition-all duration-300">
+        <div className="min-h-screen bg-base-200 transition-colors duration-300" data-theme={theme}>
           <Routes>
             <Route path="/" element={<Navigate to="/admin" replace />} />
             <Route path="*" element={<Navigate to="/admin" replace />} />
