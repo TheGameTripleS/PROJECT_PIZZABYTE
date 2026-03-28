@@ -50,7 +50,6 @@ import IngredientsPage from "./pages/IngredientsPage";
 import ItemPage from "./pages/ItemPage";
 import StaffPage from "./pages/StaffPage";
 import { useThemeStore } from "./store/useThemeStore";
-import { useAdminStore } from "./store/useAdminStore";
 
 function App() {
   // Original States
@@ -63,7 +62,6 @@ function App() {
   // New States for Admin and Theme
   const [isAdmin, setIsAdmin] = useState(false);
   const { theme } = useThemeStore(); // Global theme selector
-  const { initializeAdminSession } = useAdminStore();
 
   // Original User Update Logic
   const handleUpdateUser = async (user) => {
@@ -116,10 +114,6 @@ function App() {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
-
-  useEffect(() => {
-    initializeAdminSession();
-  }, [initializeAdminSession]);
 
   // Original Modal & Logout Handlers
   const activateLoginModal = () => {
