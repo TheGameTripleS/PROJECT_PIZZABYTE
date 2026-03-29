@@ -1,7 +1,7 @@
 const Card = ({ formValue }) => {
   return (
     <section
-      className="card"
+      className="payment-card"
       aria-hidden="true">
       <div className="front">
         <div className="strip-bottom"></div>

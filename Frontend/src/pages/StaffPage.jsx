@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Trash2Icon, RefreshCwIcon, UsersIcon, IndianRupeeIcon, ChevronsUpDownIcon } from "lucide-react";
 import { useStaffStore } from "../store/useStaffStore";
 
@@ -143,8 +143,8 @@ function StaffPage() {
                 const isDetailsLoading = relationLoadingByStaffId[person.staff_id];
 
                 return (
-                  <>
-                    <tr key={person.staff_id}>
+                  <Fragment key={person.staff_id}>
+                    <tr>
                       <td>{person.staff_id}</td>
                       <td>{person.first_name} {person.last_name}</td>
                       <td>{person.email || "-"}</td>
@@ -232,7 +232,7 @@ function StaffPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>

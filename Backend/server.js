@@ -25,14 +25,23 @@ const PORT = process.env.PORT || 3000;
 
 // 3. Configure CORS (Combining your logic)
 const allowedOrigins =
-  process.env.NODE_ENV === "production" 
-    ? ["https://pizza-time-with-react.vercel.app"] 
-    : ["http://localhost:5173", "http://localhost:5174"]; // Added extra local port just in case
+  process.env.NODE_ENV === "production"
+    ? ["https://pizza-time-with-react.vercel.app", process.env.FRONTEND_ORIGIN].filter(Boolean)
+    : ["http://localhost:5173", "http://localhost:5174", process.env.FRONTEND_ORIGIN].filter(Boolean);
+
+const localhostRegex = /^http:\/\/localhost:\d+$/;
 
 // 4. Global Middleware
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin) || localhostRegex.test(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS not allowed for origin: ${origin}`));
+    },
     credentials: true, // Crucial for cookies to work (from index.mjs)
   })
 );

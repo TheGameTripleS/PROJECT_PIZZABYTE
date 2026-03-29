@@ -27,15 +27,32 @@ function ExpensesPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="input input-bordered flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-lg border border-base-content/20 bg-base-100 px-3 py-2">
             <CalendarIcon className="size-4 opacity-70" />
             <input
+              id="expense-date"
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent"
+              className="input input-ghost input-sm min-w-[11rem] p-0 focus:outline-none"
+              style={{ colorScheme: "light" }}
             />
-          </label>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            onClick={() => {
+              const dateInput = document.getElementById("expense-date");
+              if (dateInput?.showPicker) {
+                dateInput.showPicker();
+              } else {
+                dateInput?.focus();
+              }
+            }}
+          >
+            Calendar
+          </button>
 
           <button className="btn btn-ghost btn-circle" onClick={() => fetchExpensesByDate(selectedDate)}>
             <RefreshCwIcon className={`size-5 ${loading ? "animate-spin" : ""}`} />
