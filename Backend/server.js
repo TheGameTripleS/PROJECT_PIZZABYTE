@@ -52,7 +52,7 @@ app.use(morgan("dev"));  // Request logging (from server.js)
 
 // 5. Apply Routes
 app.use("/api/items", itemRoutes); // Your custom item routes
-app.use("/", indexRouter);         // Your users, captcha, and shortener routes
+app.use("/", indexRouter);         // Your users, captcha, and address routes
 app.use("/api/auth", authRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/ingredients", ingredientRoutes);
