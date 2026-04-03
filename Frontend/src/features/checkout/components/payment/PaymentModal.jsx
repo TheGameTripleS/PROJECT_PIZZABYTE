@@ -1,11 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   validatePaymentData,
-  structurePaymentData,
 } from "../../../../utils/checkoutDataStructure";
 import "./payment-modal.css";
 
-const PaymentModal = ({ isOpen, checkoutData, totalAmount, onConfirm, onCancel, isSubmitting }) => {
+const formatCurrency = (amount) => `$${Number(amount || 0).toFixed(2)}`;
+
+const PaymentModal = ({
+  isOpen,
+  checkoutData,
+  totalAmount,
+  pricingSummary,
+  onConfirm,
+  onCancel,
+  isSubmitting,
+}) => {
   const [paymentForm, setPaymentForm] = useState({
     method: "", // "cash", "card", or "mfs"
     amount: totalAmount || "",
@@ -13,20 +22,24 @@ const PaymentModal = ({ isOpen, checkoutData, totalAmount, onConfirm, onCancel, 
 
   const [formError, setFormError] = useState({});
 
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setPaymentForm({
+      method: "",
+      amount: Number(totalAmount || 0).toFixed(2),
+    });
+    setFormError({});
+  }, [isOpen, totalAmount]);
+
   const handleMethodChange = (e) => {
     setPaymentForm({
       ...paymentForm,
       method: e.target.value,
     });
     setFormError({ ...formError, method: "" });
-  };
-
-  const handleAmountChange = (e) => {
-    setPaymentForm({
-      ...paymentForm,
-      amount: e.target.value,
-    });
-    setFormError({ ...formError, amount: "" });
   };
 
   const handleSubmit = (e) => {
@@ -79,8 +92,17 @@ const PaymentModal = ({ isOpen, checkoutData, totalAmount, onConfirm, onCancel, 
               <strong>Service Type:</strong>{" "}
               {checkoutData?.serviceType === "dine-in" ? "Dine In" : "Delivery"}
             </p>
+            <p>
+              <strong>Subtotal:</strong>{" "}
+              <span className="amount">{formatCurrency(pricingSummary?.subtotal)}</span>
+            </p>
+            <p>
+              <strong>Discount:</strong>{" "}
+              <span className="amount">-{formatCurrency(pricingSummary?.discount)}</span>
+            </p>
             <p className="payment-modal__total-amount">
-              <strong>Total Amount:</strong> <span className="amount">${totalAmount || 0}</span>
+              <strong>Total Amount:</strong>{" "}
+              <span className="amount">{formatCurrency(totalAmount || 0)}</span>
             </p>
           </div>
         </div>
@@ -157,13 +179,13 @@ const PaymentModal = ({ isOpen, checkoutData, totalAmount, onConfirm, onCancel, 
                 step="0.01"
                 min="0"
                 value={paymentForm.amount}
-                onChange={handleAmountChange}
                 placeholder="0.00"
-                disabled={isSubmitting}
+                disabled
+                readOnly
               />
             </div>
             <p className="payment-modal__amount-info">
-              Minimum required: <strong>${totalAmount || 0}</strong>
+              Amount fixed from backend: <strong>{formatCurrency(totalAmount || 0)}</strong>
             </p>
             {formError.amount && <span className="payment-modal__error">{formError.amount}</span>}
           </div>

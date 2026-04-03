@@ -217,8 +217,6 @@ function App() {
               }
             />
           </Routes>
-
-          <Toaster />
         </div>
       ) : (
         <>
@@ -322,6 +320,7 @@ function App() {
           <Footer />
         </>
       )}
+      <Toaster />
     </CartProvider>
   );
 }

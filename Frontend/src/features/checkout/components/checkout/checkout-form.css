@@ -104,6 +104,62 @@
   justify-content: space-between;
 }
 
+.checkout__form__grand-total {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ddd;
+  color: #ff6b35;
+  font-size: 1.05rem;
+}
+
+.checkout__form__coupon-box {
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 6px;
+  border-left: 4px solid #ff6b35;
+}
+
+.checkout__form__coupon-input-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.checkout__form__coupon-input-group input {
+  flex: 1 1 220px;
+  min-height: 44px;
+  border: 1px solid #d8d8d8;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+}
+
+.checkout__form__coupon-btn {
+  min-height: 44px;
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  background: #ff6b35;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.checkout__form__coupon-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.checkout__form__coupon-btn--secondary {
+  background: #333;
+}
+
+.checkout__form__coupon-success {
+  margin: 1rem 0 0;
+  color: #1f7a1f;
+  font-weight: 500;
+}
+
 /* Service Type Selection */
 .checkout__form__delivery-details {
   border: none;
@@ -187,6 +243,17 @@
   font-weight: 500;
 }
 
+.checkout__form__submit-error {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #e74c3c;
+  border-radius: 6px;
+  background: #fff2f0;
+  color: #c0392b;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
 /* Submit Button */
 .checkout__form__submit {
   width: 100%;
@@ -225,5 +292,9 @@
 
   .checkout__form__section {
     margin-bottom: 1.5rem;
+  }
+
+  .checkout__form__coupon-input-group {
+    flex-direction: column;
   }
 }

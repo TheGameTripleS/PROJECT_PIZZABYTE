@@ -1,15 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "../../../../context/CartContext";
 import "./checkout-form.css";
 
-const CheckoutForm = ({ currentUser, onCheckoutComplete }) => {
+const formatCurrency = (amount) => `$${Number(amount || 0).toFixed(2)}`;
+
+const CheckoutForm = ({
+  currentUser,
+  onCheckoutComplete,
+  pricingSummary,
+  pricingError,
+  appliedCouponCode,
+  onApplyCoupon,
+  onRemoveCoupon,
+  isCalculatingPrice,
+}) => {
   const { cart } = useCart();
   const [formValue, setFormValue] = useState({
     serviceType: "", // "dine-in" or "delivery"
   });
+  const [couponCode, setCouponCode] = useState("");
 
   const [formError, setFormError] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    setCouponCode(appliedCouponCode || "");
+  }, [appliedCouponCode]);
 
   const handleServiceTypeChange = (e) => {
     setFormValue({
@@ -21,6 +37,11 @@ const CheckoutForm = ({ currentUser, onCheckoutComplete }) => {
 
   const validateForm = () => {
     const errors = {};
+    const customerId = currentUser?.cust_id || currentUser?.id;
+
+    if (!customerId) {
+      errors.user = "Please sign in before placing an order";
+    }
 
     if (!formValue.serviceType) {
       errors.serviceType = "Please select a service type";
@@ -41,7 +62,23 @@ const CheckoutForm = ({ currentUser, onCheckoutComplete }) => {
     return errors;
   };
 
-  const handleSubmit = (e) => {
+  const handleApplyCoupon = async () => {
+    if (!onApplyCoupon) {
+      return;
+    }
+
+    await onApplyCoupon(couponCode);
+  };
+
+  const handleRemoveCoupon = async () => {
+    setCouponCode("");
+
+    if (onRemoveCoupon) {
+      await onRemoveCoupon();
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const errors = validateForm();
 
@@ -53,8 +90,8 @@ const CheckoutForm = ({ currentUser, onCheckoutComplete }) => {
     // Structure data according to database schema for order creation
     const checkoutData = {
       customerData: {
-        cust_id: currentUser.cust_id, // From profile
-        add_id: currentUser.add_id, // From profile
+        cust_id: currentUser.cust_id || currentUser.id, // From profile/auth payload
+        add_id: currentUser.add_id || null, // From profile/auth payload
         fullname: currentUser.fullname,
         email: currentUser.email,
         number: currentUser.number,
@@ -73,9 +110,13 @@ const CheckoutForm = ({ currentUser, onCheckoutComplete }) => {
     };
 
     setIsSubmitting(true);
-    // Pass data to parent component for payment modal
-    if (onCheckoutComplete) {
-      onCheckoutComplete(checkoutData);
+
+    try {
+      if (onCheckoutComplete) {
+        await onCheckoutComplete(checkoutData);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -87,6 +128,7 @@ const CheckoutForm = ({ currentUser, onCheckoutComplete }) => {
       <div className="checkout__form__section">
         <h4>Personal Information</h4>
         <div className="checkout__form__info">
+          {formError.user && <span className="checkout__form__error">{formError.user}</span>}
           <p>
             <strong>Name:</strong> {currentUser?.fullname || "Not provided"}
           </p>
@@ -144,12 +186,70 @@ const CheckoutForm = ({ currentUser, onCheckoutComplete }) => {
             <p>
               <strong>Total Quantity:</strong> {cart.reduce((sum, item) => sum + item.quantity, 0)}
             </p>
+            <p>
+              <strong>Subtotal:</strong> {formatCurrency(pricingSummary?.subtotal)}
+            </p>
+            <p>
+              <strong>Discount:</strong> -{formatCurrency(pricingSummary?.discount)}
+            </p>
+            <p className="checkout__form__grand-total">
+              <strong>Total:</strong> {formatCurrency(pricingSummary?.total)}
+            </p>
           </div>
+        </div>
+      </div>
+
+      <div className="checkout__form__section">
+        <h4>Coupon</h4>
+        <div className="checkout__form__coupon-box">
+          <div className="checkout__form__coupon-input-group">
+            <input
+              type="text"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              placeholder="Enter coupon code"
+              disabled={isSubmitting || isCalculatingPrice}
+            />
+            <button
+              type="button"
+              className="checkout__form__coupon-btn"
+              onClick={handleApplyCoupon}
+              disabled={isSubmitting || isCalculatingPrice || !couponCode.trim()}
+            >
+              {isCalculatingPrice ? "Checking..." : "Apply"}
+            </button>
+            {appliedCouponCode && (
+              <button
+                type="button"
+                className="checkout__form__coupon-btn checkout__form__coupon-btn--secondary"
+                onClick={handleRemoveCoupon}
+                disabled={isSubmitting || isCalculatingPrice}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+
+          {appliedCouponCode && pricingSummary?.coupon && (
+            <p className="checkout__form__coupon-success">
+              Applied {pricingSummary.coupon.code}:{" "}
+              {pricingSummary.coupon.discount_percent}% off on minimum amount{" "}
+              {formatCurrency(pricingSummary.coupon.min_order_amount)}
+            </p>
+          )}
+
+          {pricingError && (
+            <span className="checkout__form__error">{pricingError}</span>
+          )}
         </div>
       </div>
 
       {/* Service Type Selection */}
       <form onSubmit={handleSubmit}>
+        {pricingError && (
+          <div className="checkout__form__submit-error">{pricingError}</div>
+        )}
+
         <fieldset className="checkout__form__delivery-details">
           <legend>Service Type</legend>
           <div className="checkout__form__service-type">
@@ -201,10 +301,10 @@ const CheckoutForm = ({ currentUser, onCheckoutComplete }) => {
         <button 
           type="submit" 
           className="active-button-style checkout__form__submit"
-          disabled={isSubmitting || cart.length === 0}
+          disabled={isSubmitting || isCalculatingPrice || cart.length === 0}
           aria-label="Proceed to payment"
         >
-          Proceed to Payment
+          {isSubmitting ? "Preparing Payment..." : "Proceed to Payment"}
         </button>
       </form>
     </section>
