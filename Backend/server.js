@@ -12,6 +12,7 @@ import authRoutes from "./routes/authRoutes.js";
 import staffRoutes from "./routes/staffRoutes.js";
 import ingredientRoutes from "./routes/ingredientRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
+import incomeRoutes from "./routes/incomeRoutes.js";
 
 // 2. Import Database Connection
 import { sql } from "../Database/db.js"; // From server.js
@@ -57,6 +58,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/ingredients", ingredientRoutes);
 app.use("/api/expenses", expenseRoutes);
+app.use("/api/income", incomeRoutes);
 
 // 6. Global 404 Handler (from index.mjs)
 app.use((req, res) => {

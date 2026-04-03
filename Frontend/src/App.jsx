@@ -46,6 +46,7 @@ import NavBar from "./components/NavBar";
 import AdminHomePage from "./pages/AdminHomePage";
 import AdminItemPage from "./pages/AdminItemPage";
 import ExpensesPage from "./pages/ExpensesPage";
+import IncomePage from "./pages/IncomePage";
 import IngredientsPage from "./pages/IngredientsPage";
 import ItemPage from "./pages/ItemPage";
 import StaffPage from "./pages/StaffPage";
@@ -213,6 +214,16 @@ function App() {
                 <>
                   <NavBar handleLogout={handleLogoutUser} />
                   <ExpensesPage />
+                </>
+              }
+            />
+
+            <Route
+              path="/income"
+              element={
+                <>
+                  <NavBar handleLogout={handleLogoutUser} />
+                  <IncomePage />
                 </>
               }
             />

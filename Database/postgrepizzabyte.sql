@@ -147,3 +147,15 @@ CREATE TABLE payment (
     
     FOREIGN KEY (order_id) REFERENCES orders(order_id)
 );
+
+-- Daily income from completed orders only (based on orders.created_at date)
+CREATE OR REPLACE FUNCTION daily_income(target_date DATE)
+RETURNS NUMERIC(12,2)
+LANGUAGE SQL
+AS $$
+    SELECT COALESCE(SUM(p.amount), 0)::NUMERIC(12,2)
+    FROM orders o
+    JOIN payment p ON p.order_id = o.order_id
+    WHERE o.created_at::date = target_date
+      AND LOWER(COALESCE(o.status, '')) = 'completed';
+$$;

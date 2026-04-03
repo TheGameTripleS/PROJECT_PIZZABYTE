@@ -11,7 +11,8 @@ function NavBar({ handleLogout }) {
     location.pathname.startsWith("/admin/items") ||
     location.pathname.startsWith("/item/") ||
     location.pathname.startsWith("/ingredients") ||
-    location.pathname.startsWith("/expenses")
+    location.pathname.startsWith("/expenses") ||
+    location.pathname.startsWith("/income")
 
   return (
     <div className="bg-base-100/80 backdrop-blur-lg border-b border-base-content/10 sticky top-0 z-50">
