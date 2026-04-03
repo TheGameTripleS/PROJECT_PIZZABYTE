@@ -15,6 +15,7 @@ export const useStaffStore = create((set, get) => ({
     first_name: "",
     last_name: "",
     email: "",
+    password: "",
     position: "",
     hourly_rate: "",
   },
@@ -27,6 +28,7 @@ export const useStaffStore = create((set, get) => ({
         first_name: "",
         last_name: "",
         email: "",
+        password: "",
         position: "",
         hourly_rate: "",
       },
@@ -84,6 +86,7 @@ export const useStaffStore = create((set, get) => ({
       const { formData } = get();
       await axios.post(`${BASE_URL}/api/staff`, {
         ...formData,
+        password: formData.position === "receptionist" ? formData.password || null : null,
         hourly_rate: Number(formData.hourly_rate),
       });
 
@@ -115,12 +118,21 @@ export const useStaffStore = create((set, get) => ({
     }
   },
 
-  updateStaffRate: async (staffId, hourlyRate) => {
+  updateStaffMember: async (staffId, updates) => {
     set({ loading: true });
     try {
-      const response = await axios.put(`${BASE_URL}/api/staff/${staffId}`, {
-        hourly_rate: Number(hourlyRate),
-      });
+      const payload = {
+        first_name: updates.first_name?.trim(),
+        last_name: updates.last_name?.trim(),
+        email: updates.email?.trim(),
+        position: updates.position,
+        hourly_rate:
+          updates.hourly_rate === "" || updates.hourly_rate === null || updates.hourly_rate === undefined
+            ? undefined
+            : Number(updates.hourly_rate),
+      };
+
+      const response = await axios.put(`${BASE_URL}/api/staff/${staffId}`, payload);
 
       const updated = response.data.data;
 
@@ -130,10 +142,28 @@ export const useStaffStore = create((set, get) => ({
         ),
       }));
 
-      toast.success("Hourly rate updated");
+      toast.success("Staff updated");
     } catch (error) {
-      console.error("Error in updateStaffRate function:", error);
+      console.error("Error in updateStaffMember function:", error);
       toast.error(error.response?.data?.message || "Something went wrong");
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  updateStaffPassword: async (staffId, password, position) => {
+    set({ loading: true });
+    try {
+      await axios.put(`${BASE_URL}/api/staff/${staffId}`, {
+        password: password.trim(),
+        position,
+      });
+
+      toast.success("Password updated");
+    } catch (error) {
+      console.error("Error in updateStaffPassword function:", error);
+      toast.error(error.response?.data?.message || "Something went wrong");
+      throw error;
     } finally {
       set({ loading: false });
     }

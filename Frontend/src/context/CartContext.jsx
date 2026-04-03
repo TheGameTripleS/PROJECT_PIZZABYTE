@@ -66,6 +66,53 @@ export const CartProvider = ({ children, isLoggedIn }) => {
     setIsAddedToCart(true);
   };
 
+  const handleAddProductWithQuantity = (targetProduct, userSelectedAttributes, quantityToAdd = 1) => {
+    const productAlreadyInCart = CheckRepeatableProducts(targetProduct, userSelectedAttributes);
+    let currentCartItems = [...cart];
+    let newQuantity;
+    
+    if (productAlreadyInCart === undefined) {
+      // Product not in cart, add it with the specified quantity
+      const itemToAdd = targetProduct;
+      newQuantity = quantityToAdd;
+      currentCartItems.push({
+        ...itemToAdd,
+        userSelectedAttributes,
+        quantity: newQuantity,
+      });
+    } else {
+      // Product already in cart, increment by the specified quantity
+      let index;
+      if (userSelectedAttributes.length === 0) {
+        index = cart.findIndex((item) => item.id === targetProduct.id);
+      } else {
+        index = cart.findIndex(
+          (item) =>
+            item.userSelectedAttributes[0]?.attributeValue === userSelectedAttributes[0].attributeValue &&
+            item.id === targetProduct.id
+        );
+      }
+      if (index !== -1) {
+        newQuantity = cart[index].quantity;
+        currentCartItems[index] = {
+          ...cart[index],
+          quantity: newQuantity + quantityToAdd,
+        };
+      }
+    }
+
+    const totalCartQuantity = currentCartItems.reduce((total, item) => total + item.quantity, 0);
+    const jsonUser = JSON.stringify(currentCartItems);
+    localStorage.setItem("cartItems", jsonUser);
+    setCart(currentCartItems);
+    localStorage.setItem("cartQuantity", totalCartQuantity);
+    setOrderSummary((prev) => ({
+      ...prev,
+      quantity: totalCartQuantity,
+    }));
+    setIsAddedToCart(true);
+  };
+
   const handleRemoveProduct = (target, targetAttr) => {
     let productToUpdate = CheckRepeatableProducts(target, targetAttr);
     const hasAttribute = productToUpdate[0].attributes.length > 0;
@@ -166,6 +213,7 @@ export const CartProvider = ({ children, isLoggedIn }) => {
         orderSummary,
         setOrderSummary,
         handleAddProduct,
+        handleAddProductWithQuantity,
         handleRemoveProduct,
         clearCart,
         isAddedToCart,

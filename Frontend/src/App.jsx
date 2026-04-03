@@ -48,7 +48,9 @@ import AdminItemPage from "./pages/AdminItemPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import IngredientsPage from "./pages/IngredientsPage";
 import ItemPage from "./pages/ItemPage";
+import RecipePage from "./pages/RecipePage";
 import StaffPage from "./pages/StaffPage";
+import ReceptionistDashboard from "./pages/ReceptionistDashboard";
 import { useThemeStore } from "./store/useThemeStore";
 
 function App() {
@@ -59,8 +61,9 @@ function App() {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  // New States for Admin and Theme
+  // New States for Admin, Receptionist and Theme
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isReceptionist, setIsReceptionist] = useState(false);
   const { theme } = useThemeStore(); // Global theme selector
 
   // Original User Update Logic
@@ -76,6 +79,7 @@ function App() {
   useEffect(() => {
     const loggedIn = localStorage.getItem("loggedIn");
     const adminSaved = localStorage.getItem("isAdmin") === "true";
+    const receptionistSaved = localStorage.getItem("isReceptionist") === "true";
 
     if (!loggedIn) return;
     let isMounted = true;
@@ -87,8 +91,10 @@ function App() {
       if (!response.success) {
         setIsLoggedIn(false);
         setIsAdmin(false);
+        setIsReceptionist(false);
         localStorage.removeItem("loggedIn");
         localStorage.removeItem("isAdmin");
+        localStorage.removeItem("isReceptionist");
       } else {
         setIsLoggedIn(true);
         setUser(response.user);
@@ -126,6 +132,7 @@ function App() {
     if (response.success) {
       setIsLoggedIn(false);
       setIsAdmin(false);
+      setIsReceptionist(false);
       setUser(null);
       hideMenu();
       ResetLocation();
@@ -133,6 +140,7 @@ function App() {
       // Use removeItem instead of .clear() so you don't delete your theme!
       localStorage.removeItem("loggedIn");
       localStorage.removeItem("isAdmin");
+      localStorage.removeItem("isReceptionist");
 
       // FORCE REDIRECT TO HOME PAGE
       navigate("/"); // <--- ADD THIS LINE
@@ -147,7 +155,8 @@ function App() {
   return (
     <CartProvider isLoggedIn={isLoggedIn}>
       {/* CONDITIONAL RENDERING: 
-            If Admin is logged in, show the previous app (Dashboard).
+            If Admin is logged in, show the admin dashboard.
+            If Receptionist is logged in, show the receptionist dashboard.
             Otherwise, show the standard PizzaByte Storefront.
           */}
       {isAdmin ? (
@@ -188,6 +197,16 @@ function App() {
             />
 
             <Route
+              path="/recipe/:sku"
+              element={
+                <>
+                  <NavBar handleLogout={handleLogoutUser} />
+                  <RecipePage />
+                </>
+              }
+            />
+
+            <Route
               path="/staff"
               element={
                 <>
@@ -218,6 +237,11 @@ function App() {
             />
           </Routes>
         </div>
+      ) : isReceptionist ? (
+        <div className="min-h-screen bg-base-200 transition-colors duration-300" data-theme={theme}>
+          <NavBar handleLogout={handleLogoutUser} />
+          <ReceptionistDashboard user={user} handleLogout={handleLogoutUser} />
+        </div>
       ) : (
         <>
           <Header
@@ -228,6 +252,7 @@ function App() {
                 setIsLoginModalOpen={setIsLoginModalOpen}
                 isLoginModalOpen={isLoginModalOpen}
                 hideMenu={hideMenu}
+                setIsReceptionist={setIsReceptionist}
               />
             }
             activateLoginModal={activateLoginModal}

@@ -63,6 +63,174 @@
   width: 90%;
 }
 
+.profile__orders {
+  width: 90%;
+  padding: 1rem;
+  margin-top: 2rem;
+}
+
+.profile__orders__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.profile__orders__header h3 {
+  color: var(--white);
+  font-family: var(--poppins-font);
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.profile__orders__header p,
+.profile__orders__state {
+  color: var(--white);
+  font-family: var(--poppins-font);
+  font-size: 1rem;
+  text-align: left;
+}
+
+.profile__orders__state--error {
+  color: var(--pizza-red);
+}
+
+.profile__orders__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.profile__orders__filter {
+  border: 1px solid var(--transparent-button);
+  background-color: transparent;
+  color: var(--white);
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  font-family: var(--poppins-font);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.profile__orders__filter--active {
+  background-color: var(--pizza-red);
+  border-color: var(--pizza-red);
+  color: var(--light-black);
+}
+
+.profile__orders__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.profile__order-card {
+  border: 1px solid var(--transparent-button);
+  border-radius: 18px;
+  padding: 1.25rem;
+  background-color: var(--lightish-black);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--modal-box-shadow);
+  transition: var(--transition);
+}
+
+.profile__order-card__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.profile__order-card__top h4 {
+  color: var(--white);
+  font-family: var(--poppins-font);
+  font-size: 1.15rem;
+  margin-bottom: 0.35rem;
+}
+
+.profile__order-card__top p {
+  color: var(--light-gray);
+  font-family: var(--poppins-font);
+  font-size: 0.95rem;
+  text-align: left;
+}
+
+.profile__order-status {
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  font-family: var(--poppins-font);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.profile__order-status--pending {
+  background-color: hsl(var(--wa) / 0.18);
+  color: hsl(var(--wa));
+  border: 1px solid hsl(var(--wa) / 0.4);
+}
+
+.profile__order-status--processing {
+  background-color: hsl(var(--in) / 0.18);
+  color: hsl(var(--in));
+  border: 1px solid hsl(var(--in) / 0.4);
+}
+
+.profile__order-status--completed {
+  background-color: hsl(var(--su) / 0.18);
+  color: hsl(var(--su));
+  border: 1px solid hsl(var(--su) / 0.4);
+}
+
+.profile__order-status--cancelled {
+  background-color: hsl(var(--er) / 0.18);
+  color: hsl(var(--er));
+  border: 1px solid hsl(var(--er) / 0.4);
+}
+
+.profile__order-card__meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.profile__order-card__meta span {
+  display: block;
+  color: var(--light-gray);
+  font-family: var(--poppins-font);
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
+.profile__order-card__meta strong {
+  color: var(--white);
+  font-family: var(--poppins-font);
+  font-size: 1rem;
+}
+
+.profile__order-card__items {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+}
+
+.profile__order-card__items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--white);
+  font-family: var(--poppins-font);
+  border-top: 1px solid var(--transparent-button);
+  padding-top: 0.7rem;
+}
+
 .profile__form {
   display: flex;
   flex-direction: column;
@@ -187,4 +355,22 @@
   font-family: var(--poppins-font);
   color: var(--pizza-red);
   margin-left: auto;
+}
+
+@media (max-width: 768px) {
+  .profile__form__info,
+  .profile__info__section,
+  .profile__orders__header,
+  .profile__order-card__top,
+  .profile__actions {
+    flex-direction: column;
+  }
+
+  .profile__order-card__meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile__orders__filters {
+    justify-content: flex-start;
+  }
 }

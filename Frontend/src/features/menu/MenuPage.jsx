@@ -1,13 +1,12 @@
 import "./assets/menu.css";
 import MenuCategories from "./components/MenuCategories";
 import ScrollButton from "../../components/ScrollBtn";
-import ItemCard from "../../components/ItemCard";
+import MenuItemCard from "./components/MenuItemCard";
 import ReactPaginate from "react-paginate";
 import { useState, useEffect } from "react";
 import ResetLocation from "../../utils/ResetLocation";
 import { AnimatePresence, motion } from "framer-motion";
 import { PackageIcon } from "lucide-react";
-import CustomerItemCardActions from "./components/CustomerItemCardActions";
 import { fadeIn, slideInLeft } from "../../utils/animations";
 import { useItemStore } from "../../store/useItemStore";
 
@@ -96,19 +95,14 @@ const MenuPage = () => {
           <AnimatePresence mode="sync">
             {currentItems.map((item, index) => (
               <motion.div
-                // ADDED FALLBACKS HERE to prevent Framer Motion from crashing
-                key={item.sku || item.SKU || `fallback-key-${index}`} 
+                key={item.sku || item.SKU || `fallback-key-${index}`}
                 initial={fadeIn.initial}
                 whileInView={fadeIn.whileInView}
                 exit={fadeIn.exit}
                 transition={fadeIn.transition}>
-                <ItemCard
-                  item={item}
-                  variant="customer"
-                  renderActions={(cardItem) => <CustomerItemCardActions item={cardItem} />}
-                />
+                <MenuItemCard item={item} />
               </motion.div>
-              ))}
+            ))}
           </AnimatePresence>
         )}
       </section>

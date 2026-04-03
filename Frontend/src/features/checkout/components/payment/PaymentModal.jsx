@@ -185,7 +185,7 @@ const PaymentModal = ({
               />
             </div>
             <p className="payment-modal__amount-info">
-              Amount fixed from backend: <strong>{formatCurrency(totalAmount || 0)}</strong>
+              Total Price: <strong>{formatCurrency(totalAmount || 0)}</strong>
             </p>
             {formError.amount && <span className="payment-modal__error">{formError.amount}</span>}
           </div>

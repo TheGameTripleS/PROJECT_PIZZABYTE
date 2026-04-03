@@ -10,8 +10,10 @@ function NavBar({ handleLogout }) {
     location.pathname.startsWith("/staff") ||
     location.pathname.startsWith("/admin/items") ||
     location.pathname.startsWith("/item/") ||
+    location.pathname.startsWith("/recipe/") ||
     location.pathname.startsWith("/ingredients") ||
     location.pathname.startsWith("/expenses")
+  const shouldShowLogout = !location.pathname.startsWith("/recipe/")
 
   return (
     <div className="bg-base-100/80 backdrop-blur-lg border-b border-base-content/10 sticky top-0 z-50">
@@ -44,7 +46,7 @@ function NavBar({ handleLogout }) {
 
             <ThemeSelector />
 
-            {isAdminHome && handleLogout && (
+            {handleLogout && shouldShowLogout && (
               <button 
                 onClick={handleLogout}
                 className="btn btn-ghost btn-sm gap-2"
