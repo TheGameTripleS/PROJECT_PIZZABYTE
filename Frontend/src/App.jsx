@@ -53,6 +53,8 @@ import ReceptionManagementPage from "./pages/ReceptionManagementPage";
 import RecipePage from "./pages/RecipePage";
 import StaffPage from "./pages/StaffPage";
 import ReceptionistDashboard from "./pages/ReceptionistDashboard";
+import ReceptionistOrdersTodayPage from "./pages/ReceptionistOrdersTodayPage";
+import ReceptionistStoreStockPage from "./pages/ReceptionistStoreStockPage";
 import { useThemeStore } from "./store/useThemeStore";
 
 function App() {
@@ -261,8 +263,19 @@ function App() {
         </div>
       ) : isReceptionist ? (
         <div className="min-h-screen bg-base-200 transition-colors duration-300" data-theme={theme}>
-          <NavBar handleLogout={handleLogoutUser} />
-          <ReceptionistDashboard user={user} handleLogout={handleLogoutUser} />
+          <Routes>
+            <Route path="/" element={<Navigate to="/reception" replace />} />
+            <Route path="/reception" element={<ReceptionistDashboard user={user} handleLogout={handleLogoutUser} />} />
+            <Route
+              path="/reception/store-stock"
+              element={<ReceptionistStoreStockPage user={user} handleLogout={handleLogoutUser} />}
+            />
+            <Route
+              path="/reception/orders-today"
+              element={<ReceptionistOrdersTodayPage user={user} handleLogout={handleLogoutUser} />}
+            />
+            <Route path="*" element={<Navigate to="/reception" replace />} />
+          </Routes>
         </div>
       ) : (
         <>

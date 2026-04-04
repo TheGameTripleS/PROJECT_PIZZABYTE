@@ -15,6 +15,7 @@ import recipeRoutes from "./routes/recipeRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
 import incomeRoutes from "./routes/incomeRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
+import receptionistRoutes from "./routes/receptionistRoutes.js";
 import { ensureProcessCheckoutRoutine } from "./services/processCheckoutRoutine.js";
 import { syncIdentitySequences } from "./services/syncIdentitySequences.js";
 import { ensurePaymentSafetyRoutine } from "./services/paymentSafetyRoutine.js";
@@ -23,6 +24,7 @@ import { ensureOrderItemConcurrencyRoutine } from "./services/orderItemConcurren
 import { ensureIncomeMetricsRoutine } from "./services/incomeMetricsRoutine.js";
 import { ensureOrderPaymentCancellationRoutine } from "./services/orderPaymentCancellationRoutine.js";
 import applyRecipeTriggers from "./services/applyRecipeTriggers.js";
+import { ensureReceptionistStockRoutine } from "./services/receptionistStockRoutine.js";
 
 // 2. Import Database Connection
 import { sql } from "../Database/db.js"; // From server.js
@@ -71,6 +73,8 @@ app.use("/api/recipes", recipeRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/income", incomeRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/receptionist", receptionistRoutes);
+app.use("/receptionist", receptionistRoutes);
 
 // 6. Global 404 Handler (from index.mjs)
 app.use((req, res) => {
@@ -116,6 +120,7 @@ async function initializeServer() {
     await ensureOrderStockDeductionRoutine();
     await ensureIncomeMetricsRoutine();
     await ensureOrderPaymentCancellationRoutine();
+    await ensureReceptionistStockRoutine();
     await syncIdentitySequences();
 
     app.listen(PORT, () => {

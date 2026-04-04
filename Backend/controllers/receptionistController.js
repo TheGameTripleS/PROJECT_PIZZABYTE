@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { sql }  from "../../Database/db.js";
+import { pool, sql } from "../../Database/db.js";
 
 const secret = process.env.JWT_SECRET;
 const expires = process.env.JWT_EXPIRES_IN;
@@ -94,5 +94,400 @@ export const loginReceptionist = async (req, res) => {
       success: false,
       message: "Server error: failed to login. Please try again later.",
     });
+  }
+};
+
+export const getStoreStockIngredients = async (_req, res) => {
+  try {
+    const ingredients = await sql`
+      SELECT ing_id, ing_name, meas, ing_price
+      FROM ingredients
+      ORDER BY ing_name ASC
+    `;
+
+    return res.status(200).json({ success: true, data: ingredients });
+  } catch (error) {
+    console.error("Error in getStoreStockIngredients:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+export const buyStoreStock = async (req, res) => {
+  const { staff_id, ing_id, quantity } = req.body;
+
+  if (!staff_id || !ing_id || quantity === undefined || quantity === null) {
+    return res.status(400).json({
+      success: false,
+      message: "staff_id, ing_id and quantity are required",
+    });
+  }
+
+  try {
+    const created = await sql`
+      SELECT *
+      FROM receptionist_restock(
+        ${Number(staff_id)}::int,
+        ${Number(ing_id)}::int,
+        ${Number(quantity)}::int,
+        CURRENT_TIMESTAMP::timestamp
+      )
+    `;
+
+    return res.status(201).json({ success: true, data: created[0] });
+  } catch (error) {
+    console.error("Error in buyStoreStock:", error);
+
+    const message =
+      error?.message ||
+      "Failed to update stock log";
+
+    return res.status(400).json({ success: false, message });
+  }
+};
+
+export const getReceptionistStoreStockLogs = async (req, res) => {
+  const { staffId } = req.params;
+
+  try {
+    const logs = await sql`
+      SELECT
+        sl.log_id,
+        sl.ing_id,
+        i.ing_name,
+        sl.rota_id,
+        sl.change_amount,
+        sl.created_at,
+        r.work_date,
+        r.start_time,
+        r.end_time
+      FROM stock_log sl
+      JOIN rota r ON r.rota_id = sl.rota_id
+      JOIN ingredients i ON i.ing_id = sl.ing_id
+      WHERE r.staff_id = ${staffId}
+        AND sl.change_amount > 0
+      ORDER BY sl.created_at DESC
+      LIMIT 50
+    `;
+
+    return res.status(200).json({ success: true, data: logs });
+  } catch (error) {
+    console.error("Error in getReceptionistStoreStockLogs:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+const parseInteger = (value) => {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+};
+
+const ensureReceptionistExists = async (staffId, client = null) => {
+  const runner = client || sql;
+
+  const rows = client
+    ? await runner.query(
+        `
+          SELECT staff_id, position
+          FROM staff
+          WHERE staff_id = $1
+          LIMIT 1
+        `,
+        [staffId]
+      )
+    : await runner`
+        SELECT staff_id, position
+        FROM staff
+        WHERE staff_id = ${staffId}
+        LIMIT 1
+      `;
+
+  const staff = client ? rows.rows : rows;
+
+  if (!staff.length) {
+    const error = new Error("Staff not found");
+    error.status = 404;
+    throw error;
+  }
+
+  if (String(staff[0].position || "").toLowerCase() !== "receptionist") {
+    const error = new Error("Only receptionists can approve orders");
+    error.status = 403;
+    throw error;
+  }
+};
+
+const resolveReceptionistRotaId = async (staffId, client) => {
+  const activeShift = await client.query(
+    `
+      SELECT r.rota_id
+      FROM rota r
+      WHERE r.staff_id = $1
+        AND r.work_date = CURRENT_DATE
+        AND CURRENT_TIMESTAMP >= r.start_time
+        AND CURRENT_TIMESTAMP <= r.end_time
+      ORDER BY r.start_time DESC
+      LIMIT 1
+    `,
+    [staffId]
+  );
+
+  if (activeShift.rows.length) {
+    return Number(activeShift.rows[0].rota_id);
+  }
+
+  const todayShift = await client.query(
+    `
+      SELECT r.rota_id
+      FROM rota r
+      WHERE r.staff_id = $1
+        AND r.work_date = CURRENT_DATE
+      ORDER BY r.start_time DESC
+      LIMIT 1
+    `,
+    [staffId]
+  );
+
+  if (todayShift.rows.length) {
+    return Number(todayShift.rows[0].rota_id);
+  }
+
+  const latestShift = await client.query(
+    `
+      SELECT r.rota_id
+      FROM rota r
+      WHERE r.staff_id = $1
+      ORDER BY r.work_date DESC, r.start_time DESC
+      LIMIT 1
+    `,
+    [staffId]
+  );
+
+  if (latestShift.rows.length) {
+    return Number(latestShift.rows[0].rota_id);
+  }
+
+  return null;
+};
+
+export const getPendingOrdersToday = async (req, res) => {
+  const staffId = parseInteger(req.query.staff_id);
+
+  if (!staffId) {
+    return res.status(400).json({
+      success: false,
+      message: "A valid receptionist staff_id is required",
+    });
+  }
+
+  try {
+    await ensureReceptionistExists(staffId);
+
+    const orders = await sql.query(
+      `
+        SELECT
+          o.order_id,
+          o.created_at,
+          o.status,
+          o.service_type,
+          o.cust_id,
+          CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, '')) AS customer_name,
+          COALESCE(p.amount, 0) AS total_amount,
+          p.method AS payment_method,
+          p.status AS payment_status,
+          COALESCE(
+            JSON_AGG(
+              JSON_BUILD_OBJECT(
+                'item_id', i.item_id,
+                'item_name', i.item_name,
+                'quantity', oi.item_quantity
+              )
+              ORDER BY oi.row_id
+            ) FILTER (WHERE oi.row_id IS NOT NULL),
+            '[]'::json
+          ) AS items
+        FROM orders o
+        LEFT JOIN customers c ON c.cust_id = o.cust_id
+        LEFT JOIN payment p ON p.order_id = o.order_id
+        LEFT JOIN order_items oi ON oi.order_id = o.order_id
+        LEFT JOIN item i ON i.item_id = oi.item_id
+        WHERE o.created_at::date = CURRENT_DATE
+          AND LOWER(COALESCE(o.status, '')) = 'pending'
+        GROUP BY
+          o.order_id,
+          o.created_at,
+          o.status,
+          o.service_type,
+          o.cust_id,
+          c.first_name,
+          c.last_name,
+          p.amount,
+          p.method,
+          p.status
+        ORDER BY o.created_at ASC
+      `
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: orders.map((order) => ({
+        order_id: Number(order.order_id),
+        created_at: order.created_at,
+        status: order.status,
+        service_type: order.service_type,
+        cust_id: Number(order.cust_id),
+        customer_name: String(order.customer_name || "").trim() || "Customer",
+        total_amount: Number(Number(order.total_amount || 0).toFixed(2)),
+        payment_method: order.payment_method,
+        payment_status: order.payment_status,
+        items: Array.isArray(order.items)
+          ? order.items.map((item) => ({
+              item_id: Number(item.item_id),
+              item_name: item.item_name,
+              quantity: Number(item.quantity),
+            }))
+          : [],
+      })),
+    });
+  } catch (error) {
+    console.error("Error in getPendingOrdersToday:", error);
+    return res.status(error.status || 500).json({
+      success: false,
+      message: error.message || "Failed to fetch pending orders",
+    });
+  }
+};
+
+export const approvePendingOrder = async (req, res) => {
+  const staffId = parseInteger(req.body?.staff_id);
+  const orderId = parseInteger(req.params.orderId);
+
+  if (!staffId) {
+    return res.status(400).json({
+      success: false,
+      message: "A valid receptionist staff_id is required",
+    });
+  }
+
+  if (!orderId) {
+    return res.status(400).json({
+      success: false,
+      message: "A valid order id is required",
+    });
+  }
+
+  let client;
+
+  try {
+    client = await pool.connect();
+    await client.query("BEGIN");
+
+    await ensureReceptionistExists(staffId, client);
+
+    const orderForUpdate = await client.query(
+      `
+        SELECT
+          order_id,
+          status,
+          created_at,
+          (created_at::date = CURRENT_DATE) AS is_today
+        FROM orders
+        WHERE order_id = $1
+        FOR UPDATE
+      `,
+      [orderId]
+    );
+
+    if (!orderForUpdate.rows.length) {
+      const error = new Error("Order not found");
+      error.status = 404;
+      throw error;
+    }
+
+    const currentOrder = orderForUpdate.rows[0];
+
+    if (String(currentOrder.status || "").toLowerCase() !== "pending") {
+      const error = new Error("Only pending orders can be approved");
+      error.status = 409;
+      throw error;
+    }
+
+    if (!currentOrder.is_today) {
+      const error = new Error("Only today's orders can be approved from this page");
+      error.status = 400;
+      throw error;
+    }
+
+    const rotaId = await resolveReceptionistRotaId(staffId, client);
+
+    if (!rotaId) {
+      const error = new Error("No rota found for this receptionist");
+      error.status = 400;
+      throw error;
+    }
+
+    const updatedOrder = await client.query(
+      `
+        UPDATE orders
+        SET
+          status = 'completed',
+          staff_id = $2,
+          rota_id = $3
+        WHERE order_id = $1
+          AND LOWER(COALESCE(status, '')) = 'pending'
+        RETURNING order_id, status, created_at
+      `,
+      [orderId, staffId, rotaId]
+    );
+
+    if (!updatedOrder.rows.length) {
+      const error = new Error("Order approval conflict. Please refresh and try again.");
+      error.status = 409;
+      throw error;
+    }
+
+    const paymentInfo = await client.query(
+      `
+        SELECT amount, status, method
+        FROM payment
+        WHERE order_id = $1
+        LIMIT 1
+      `,
+      [orderId]
+    );
+
+    await client.query("COMMIT");
+
+    return res.status(200).json({
+      success: true,
+      message: "Order approved successfully",
+      data: {
+        order_id: Number(updatedOrder.rows[0].order_id),
+        status: updatedOrder.rows[0].status,
+        approved_by_staff_id: staffId,
+        approved_rota_id: rotaId,
+        payment_amount: Number(Number(paymentInfo.rows[0]?.amount || 0).toFixed(2)),
+        payment_status: paymentInfo.rows[0]?.status || null,
+        payment_method: paymentInfo.rows[0]?.method || null,
+      },
+    });
+  } catch (error) {
+    if (client) {
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("Rollback failed in approvePendingOrder:", rollbackError);
+      }
+    }
+
+    console.error("Error in approvePendingOrder:", error);
+    return res.status(error.status || 500).json({
+      success: false,
+      message: error.message || "Failed to approve order",
+    });
+  } finally {
+    client?.release();
   }
 };

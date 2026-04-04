@@ -350,6 +350,14 @@ export const assignReceptionistRota = async (req, res) => {
 	const endTimestampText = `${work_date} ${end_time}`;
 
 	try {
+		await sql`
+			SELECT setval(
+				pg_get_serial_sequence('rota', 'rota_id'),
+				COALESCE((SELECT MAX(rota_id) FROM rota), 1),
+				true
+			)
+		`;
+
 		const staffStatus = await isReceptionist(staffId);
 		if (!staffStatus.exists) {
 			return res.status(404).json({ success: false, message: 'Staff not found' });
