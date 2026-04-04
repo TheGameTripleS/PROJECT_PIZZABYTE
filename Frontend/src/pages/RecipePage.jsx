@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useRecipeStore } from "../store/useRecipeStore";
 import { useItemStore } from "../store/useItemStore";
 import toast from "react-hot-toast";
+import ConfirmDialog from "../components/ConfirmDialog";
 import {
   ArrowLeftIcon,
   RefreshCwIcon,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 
 function RecipePage() {
+  const confirmDialogRef = useRef(null);
   const { sku } = useParams();
   const navigate = useNavigate();
   const { currentItem, fetchItem } = useItemStore();
@@ -86,15 +88,25 @@ function RecipePage() {
     }
   };
 
-  const handleDeleteIngredient = async (recipeId) => {
-    try {
-      await deleteRecipeIngredient(recipeId);
-      await fetchRecipesForItem(currentItem.item_id);
-      toast.success("Ingredient removed successfully!");
-    } catch (error) {
-      console.error("Error deleting ingredient:", error);
-      toast.error("Failed to remove ingredient");
-    }
+  const handleDeleteIngredient = (recipe) => {
+    const ingredientName = getIngredientName(recipe.ing_id);
+    confirmDialogRef.current?.openConfirm({
+      title: 'Remove Recipe Ingredient',
+      message: `Are you sure you want to remove "${ingredientName}" from this recipe? This action cannot be undone.`,
+      confirmText: 'Remove',
+      cancelText: 'Cancel',
+      isDangerous: true,
+      onConfirm: async () => {
+        try {
+          await deleteRecipeIngredient(recipe.row_id);
+          await fetchRecipesForItem(currentItem.item_id);
+          toast.success("Ingredient removed successfully!");
+        } catch (error) {
+          console.error("Error deleting ingredient:", error);
+          toast.error("Failed to remove ingredient");
+        }
+      },
+    });
   };
 
   const getIngredientName = (ingId) => {
@@ -276,7 +288,7 @@ function RecipePage() {
                               <td>
                                 <button
                                   className="btn btn-sm btn-error btn-outline"
-                                  onClick={() => handleDeleteIngredient(recipe.row_id)}
+                                  onClick={() => handleDeleteIngredient(recipe)}
                                 >
                                   <Trash2Icon className="size-4" />
                                 </button>
@@ -293,6 +305,7 @@ function RecipePage() {
           </div>
         </div>
       </div>
+      <ConfirmDialog ref={confirmDialogRef} />
     </div>
   );
 }

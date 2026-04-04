@@ -22,6 +22,7 @@ import { ensureOrderStockDeductionRoutine } from "./services/orderStockDeduction
 import { ensureOrderItemConcurrencyRoutine } from "./services/orderItemConcurrencyRoutine.js";
 import { ensureIncomeMetricsRoutine } from "./services/incomeMetricsRoutine.js";
 import { ensureOrderPaymentCancellationRoutine } from "./services/orderPaymentCancellationRoutine.js";
+import applyRecipeTriggers from "./services/applyRecipeTriggers.js";
 
 // 2. Import Database Connection
 import { sql } from "../Database/db.js"; // From server.js
@@ -108,6 +109,7 @@ async function testQuery() {
 async function initializeServer() {
   try {
     await testQuery();
+    await applyRecipeTriggers();
     await ensureProcessCheckoutRoutine();
     await ensurePaymentSafetyRoutine();
     await ensureOrderItemConcurrencyRoutine();

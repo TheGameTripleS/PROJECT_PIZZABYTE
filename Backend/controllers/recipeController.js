@@ -160,7 +160,7 @@ export const deleteRecipeIngredient = async (req, res) => {
   try {
     // Check if recipe exists
     const recipeExists = await sql`
-      SELECT row_id FROM recipe WHERE row_id = ${parseInt(rowId)}
+      SELECT row_id, item_id FROM recipe WHERE row_id = ${parseInt(rowId)}
     `;
 
     if (recipeExists.length === 0) {
@@ -181,6 +181,16 @@ export const deleteRecipeIngredient = async (req, res) => {
     });
   } catch (error) {
     console.error('Error in deleteRecipeIngredient function:', error);
+    
+    // Handle last recipe constraint violation
+    if (error.message && error.message.includes('last recipe')) {
+      return res.status(409).json({
+        success: false,
+        error: 'Cannot delete the last recipe for an item with "continued" status. Change the item status to "discontinued" or "hold" first.',
+        code: 'LAST_RECIPE_CONSTRAINT'
+      });
+    }
+    
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };

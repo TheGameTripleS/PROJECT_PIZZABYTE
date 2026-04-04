@@ -1,4 +1,4 @@
-import { sql } from '../../Database/db.js';
+import { sql, pool } from '../../Database/db.js';
 
 export const getItems = async (req, res) => {
     try {
@@ -71,6 +71,16 @@ export const createItem = async (req, res) => {
         res.status(201).json({ success: true, data: newItem[0] });
     } catch (error) {
         console.error('Error in createItem function:', error);
+        
+        // Handle recipe constraint violation
+        if (error.message && error.message.includes('without an associated recipe')) {
+            return res.status(409).json({
+                success: false,
+                message: 'Cannot set item status to "continued" without an associated recipe. Please add recipes to this item first or use a different status (discontinued/hold).',
+                code: 'RECIPE_REQUIRED'
+            });
+        }
+        
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
@@ -119,28 +129,90 @@ export const updateItem = async (req, res) => {
         res.status(200).json({ success: true, data: updatedItem[0] });
     } catch (error) {
         console.error('Error in updateItem function:', error);
+        
+        // Handle recipe constraint violation
+        if (error.message && error.message.includes('without an associated recipe')) {
+            return res.status(409).json({
+                success: false,
+                message: 'Cannot set item status to "continued" without an associated recipe. Please add recipes to this item first or use a different status (discontinued/hold).',
+                code: 'RECIPE_REQUIRED'
+            });
+        }
+        
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
 
 export const deleteItem = async (req, res) => {
     const { sku } = req.params;
+    let client;
 
     try {
-        const deletedItem = await sql`
-            DELETE FROM item
-            WHERE sku = ${sku}
-            RETURNING *
-        `;
-        
-        if (deletedItem.length === 0) {
-            return res.status(404).json({ success: false, message: 'Item not found' });
-        }
+        // Get a client from the pool for transaction handling
+        client = await pool.connect();
 
-        console.log('Deleted item:', deletedItem);
-        res.status(200).json({ success: true, data: deletedItem[0] });
+        // Start transaction
+        await client.query('BEGIN');
+
+        try {
+            // Fetch item details before deletion
+            const itemResult = await client.query(
+                'SELECT item_id, sku, item_name, category, size, item_price, image_url, status FROM item WHERE sku = $1',
+                [sku]
+            );
+
+            if (itemResult.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({ 
+                    success: false, 
+                    message: `Item with SKU "${sku}" not found` 
+                });
+            }
+
+            const itemToDelete = itemResult.rows[0];
+            const itemId = itemToDelete.item_id;
+
+            // Count recipes before deletion
+            const recipeCountResult = await client.query(
+                'SELECT COUNT(*) as count FROM recipe WHERE item_id = $1',
+                [itemId]
+            );
+            const deletedRecipesCount = parseInt(recipeCountResult.rows[0].count, 10);
+
+            // Delete item (recipes will be deleted automatically via ON DELETE CASCADE)
+            await client.query(
+                'DELETE FROM item WHERE item_id = $1',
+                [itemId]
+            );
+
+            // Commit transaction
+            await client.query('COMMIT');
+
+            console.log(`✅ Successfully deleted item "${itemToDelete.item_name}" (SKU: ${sku}) with ${deletedRecipesCount} associated recipe(s)`);
+            
+            res.status(200).json({ 
+                success: true, 
+                message: `Item "${itemToDelete.item_name}" and ${deletedRecipesCount} associated recipe(s) deleted successfully`,
+                data: itemToDelete,
+                recipes_deleted: deletedRecipesCount
+            });
+        } catch (innerError) {
+            // Rollback on any error during deletion
+            await client.query('ROLLBACK');
+            throw innerError;
+        }
     } catch (error) {
-        console.error('Error in deleteItem function:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
+        console.error('❌ Error deleting item:', error);
+        
+        res.status(500).json({ 
+            success: false, 
+            message: 'Database error during deletion. Transaction was rolled back to ensure consistency.',
+            error: error.message 
+        });
+    } finally {
+        // Always release the client back to the pool
+        if (client) {
+            client.release();
+        }
     }
 };
