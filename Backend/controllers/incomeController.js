@@ -1,48 +1,21 @@
 import { sql } from '../../Database/db.js';
 
 const getPeriodProfit = async (startDate, endDate) => {
-  const incomeRow = await sql`
-    SELECT COALESCE(SUM(p.amount), 0) AS total_income
-    FROM orders o
-    JOIN payment p ON p.order_id = o.order_id
-    WHERE o.created_at::date BETWEEN ${startDate} AND ${endDate}
-      AND LOWER(COALESCE(o.status, '')) = 'completed'
+  const totalsRow = await sql`
+    SELECT
+      period_income(${startDate}, ${endDate}) AS total_income,
+      period_expense(${startDate}, ${endDate}) AS total_expense,
+      period_profit(${startDate}, ${endDate}) AS total_profit
   `;
 
-  const expenseRow = await sql`
-    WITH ingredient_cost AS (
-      SELECT COALESCE(SUM(sl.change_amount * i.ing_price), 0) AS ingredient_expense
-      FROM stock_log sl
-      JOIN ingredients i ON i.ing_id = sl.ing_id
-      WHERE sl.change_amount > 0
-        AND sl.created_at::date BETWEEN ${startDate} AND ${endDate}
-    ),
-    wage_cost AS (
-      SELECT COALESCE(
-        SUM(
-          CASE
-            WHEN r.end_time IS NOT NULL AND r.start_time IS NOT NULL AND r.end_time > r.start_time
-              THEN (EXTRACT(EPOCH FROM (r.end_time - r.start_time)) / 3600) * s.hourly_rate
-            ELSE 0
-          END
-        ),
-        0
-      ) AS wage_expense
-      FROM rota r
-      JOIN staff s ON s.staff_id = r.staff_id
-      WHERE r.work_date BETWEEN ${startDate} AND ${endDate}
-    )
-    SELECT (ingredient_cost.ingredient_expense + wage_cost.wage_expense) AS total_expense
-    FROM ingredient_cost, wage_cost
-  `;
-
-  const totalIncome = Number(incomeRow[0]?.total_income || 0);
-  const totalExpense = Number(expenseRow[0]?.total_expense || 0);
+  const totalIncome = Number(totalsRow[0]?.total_income || 0);
+  const totalExpense = Number(totalsRow[0]?.total_expense || 0);
+  const totalProfit = Number(totalsRow[0]?.total_profit || 0);
 
   return {
     totalIncome,
     totalExpense,
-    totalProfit: totalIncome - totalExpense,
+    totalProfit,
   };
 };
 
@@ -73,44 +46,16 @@ export const getDailyIncome = async (req, res) => {
       ORDER BY o.created_at DESC
     `;
 
-    const incomeRow = await sql`
-      SELECT COALESCE(SUM(p.amount), 0) AS total_income
-      FROM orders o
-      JOIN payment p ON p.order_id = o.order_id
-      WHERE o.created_at::date = ${date}
-        AND LOWER(COALESCE(o.status, '')) = 'completed'
+    const totalsRow = await sql`
+      SELECT
+        daily_income(${date}) AS total_income,
+        daily_expense(${date}) AS total_expense,
+        daily_profit(${date}) AS total_profit
     `;
 
-    const expenseRow = await sql`
-      WITH ingredient_cost AS (
-        SELECT COALESCE(SUM(sl.change_amount * i.ing_price), 0) AS ingredient_expense
-        FROM stock_log sl
-        JOIN ingredients i ON i.ing_id = sl.ing_id
-        WHERE sl.change_amount > 0
-          AND sl.created_at::date = ${date}
-      ),
-      wage_cost AS (
-        SELECT COALESCE(
-          SUM(
-            CASE
-              WHEN r.end_time IS NOT NULL AND r.start_time IS NOT NULL AND r.end_time > r.start_time
-                THEN (EXTRACT(EPOCH FROM (r.end_time - r.start_time)) / 3600) * s.hourly_rate
-              ELSE 0
-            END
-          ),
-          0
-        ) AS wage_expense
-        FROM rota r
-        JOIN staff s ON s.staff_id = r.staff_id
-        WHERE r.work_date = ${date}
-      )
-      SELECT (ingredient_cost.ingredient_expense + wage_cost.wage_expense) AS total_expense
-      FROM ingredient_cost, wage_cost
-    `;
-
-    const totalIncome = Number(incomeRow[0]?.total_income || 0);
-    const totalExpense = Number(expenseRow[0]?.total_expense || 0);
-    const totalProfit = totalIncome - totalExpense;
+    const totalIncome = Number(totalsRow[0]?.total_income || 0);
+    const totalExpense = Number(totalsRow[0]?.total_expense || 0);
+    const totalProfit = Number(totalsRow[0]?.total_profit || 0);
 
     return res.status(200).json({
       success: true,

@@ -9,6 +9,8 @@ const expires = process.env.JWT_EXPIRES_IN;
 const formatUserData = (dbUser) => {
   return {
     id: dbUser.cust_id,
+    cust_id: dbUser.cust_id,
+    add_id: dbUser.add_id || null,
     email: dbUser.email,
     fullname: `${dbUser.first_name || ""} ${dbUser.last_name || ""}`.trim(),
     number: dbUser.phone,
@@ -43,6 +45,8 @@ export const authUser = async (req, res) => {
         message: "Authenticated as Admin",
         user: { 
           id: "admin-1", 
+          cust_id: null,
+          add_id: null,
           email: process.env.ADMIN_EMAIL, 
           fullname: "System Admin", 
           role: "admin" 
@@ -89,6 +93,8 @@ export const loginUser = async (req, res) => {
     if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
       const adminUser = {
         id: "admin-1", // Fake ID for the frontend
+        cust_id: null,
+        add_id: null,
         email: process.env.ADMIN_EMAIL,
         fullname: "System Admin",
         role: "admin", // <-- THIS IS CRUCIAL

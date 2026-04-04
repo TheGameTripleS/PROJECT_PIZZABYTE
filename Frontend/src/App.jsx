@@ -49,6 +49,7 @@ import ExpensesPage from "./pages/ExpensesPage";
 import IncomePage from "./pages/IncomePage";
 import IngredientsPage from "./pages/IngredientsPage";
 import ItemPage from "./pages/ItemPage";
+import ReceptionManagementPage from "./pages/ReceptionManagementPage";
 import StaffPage from "./pages/StaffPage";
 import { useThemeStore } from "./store/useThemeStore";
 
@@ -227,9 +228,17 @@ function App() {
                 </>
               }
             />
-          </Routes>
 
-          <Toaster />
+            <Route
+              path="/reception-management"
+              element={
+                <>
+                  <NavBar handleLogout={handleLogoutUser} />
+                  <ReceptionManagementPage />
+                </>
+              }
+            />
+          </Routes>
         </div>
       ) : (
         <>
@@ -333,6 +342,7 @@ function App() {
           <Footer />
         </>
       )}
+      <Toaster />
     </CartProvider>
   );
 }

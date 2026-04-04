@@ -3,8 +3,9 @@ import { useState } from "react";
 import { useCart } from "../../../context/CartContext";
 
 const mapInventoryItemToCartProduct = (item) => ({
-  // Added safe fallbacks for older CSV data
-  id: item.sku || item.SKU,
+  // Map database item_id to cart id for proper checkout calculations
+  id: item.item_id || item.id || item.sku || item.SKU,
+  item_id: item.item_id,
   sku: item.sku || item.SKU,
   ItemName: item.item_name || item.ItemName,
   ItemPrice: Number(item.item_price ?? item.ItemPrice ?? 0),

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { BoxesIcon, CoinsIcon, ReceiptTextIcon, SaladIcon, UsersIcon } from "lucide-react";
+import { BoxesIcon, CoinsIcon, ReceiptTextIcon, SaladIcon, UserRoundCogIcon, UsersIcon } from "lucide-react";
 import axios from "axios";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "";
@@ -121,6 +121,11 @@ function AdminHomePage() {
           <Link to="/income" className="btn btn-success h-20 text-lg">
             <CoinsIcon className="size-6 mr-2" />
             Income
+          </Link>
+
+          <Link to="/reception-management" className="btn btn-warning h-20 text-sm md:text-base normal-case px-3">
+            <UserRoundCogIcon className="size-6 mr-2" />
+            <span className="text-center leading-tight">Reception Management</span>
           </Link>
         </div>
 

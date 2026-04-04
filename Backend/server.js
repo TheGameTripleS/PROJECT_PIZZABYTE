@@ -13,6 +13,13 @@ import staffRoutes from "./routes/staffRoutes.js";
 import ingredientRoutes from "./routes/ingredientRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
 import incomeRoutes from "./routes/incomeRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
+import { ensureProcessCheckoutRoutine } from "./services/processCheckoutRoutine.js";
+import { syncIdentitySequences } from "./services/syncIdentitySequences.js";
+import { ensurePaymentSafetyRoutine } from "./services/paymentSafetyRoutine.js";
+import { ensureOrderStockDeductionRoutine } from "./services/orderStockDeductionRoutine.js";
+import { ensureOrderItemConcurrencyRoutine } from "./services/orderItemConcurrencyRoutine.js";
+import { ensureIncomeMetricsRoutine } from "./services/incomeMetricsRoutine.js";
 
 // 2. Import Database Connection
 import { sql } from "../Database/db.js"; // From server.js
@@ -59,6 +66,7 @@ app.use("/api/staff", staffRoutes);
 app.use("/api/ingredients", ingredientRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/income", incomeRoutes);
+app.use("/api/orders", orderRoutes);
 
 // 6. Global 404 Handler (from index.mjs)
 app.use((req, res) => {
@@ -94,9 +102,23 @@ async function testQuery() {
   }
 }
 
-// Start the server only after attempting the DB connection
-testQuery().then(() => {
+async function initializeServer() {
+  try {
+    await testQuery();
+    await ensureProcessCheckoutRoutine();
+    await ensurePaymentSafetyRoutine();
+    await ensureOrderItemConcurrencyRoutine();
+    await ensureOrderStockDeductionRoutine();
+    await ensureIncomeMetricsRoutine();
+    await syncIdentitySequences();
+
     app.listen(PORT, () => {
-        console.log(`Server is running on http://localhost:${PORT}`);
+      console.log(`Server is running on http://localhost:${PORT}`);
     });
-});
+  } catch (error) {
+    console.error("Error initializing server:", error);
+    process.exit(1);
+  }
+}
+
+initializeServer();
