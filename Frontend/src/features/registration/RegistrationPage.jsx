@@ -1,0 +1,288 @@
+import { useEffect, useState } from "react";
+import validateForm from "../../utils/validate-form";
+import { motion } from "framer-motion";
+import ResetLocation from "../../utils/ResetLocation";
+import "./assets/register.css";
+import { CAPTCHA_KEY, CAPTCHA_URL } from "../../data/constants";
+const ENVIRONMENT = import.meta.env.MODE;
+import { slideInLeft } from "../../utils/animations";
+import { Link } from "react-router-dom";
+import ReCAPTCHA from "react-google-recaptcha";
+import { useRef } from "react";
+import { createUser } from "./api/createUser";
+const initialFormValue = {
+  id: "",
+  email: "",
+  password: "",
+  repeatPassword: "",
+  fullname: "",
+  address1: "",
+  address2: "",
+  zipcode: "",
+  number: "",
+};
+const RegistrationPage = ({ activateLoginModal }) => {
+  const [formValue, setFormValue] = useState(initialFormValue);
+  const [formError, setFormError] = useState({});
+  const [submit, setSubmit] = useState(false);
+  const [registrationFail, setRegistrationFail] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [captchaError, setCaptchaError] = useState("");
+
+  const captchaRef = useRef();
+  useEffect(() => {
+    document.title = "Registration | PizzaByte";
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    ResetLocation();
+    setFormError(validate(formValue));
+    if (Object.keys(validate(formValue)).length > 0) {
+      setLoading(false);
+      return;
+    }
+
+    const isCaptchaValid = await verifyCaptcha();
+    if (!isCaptchaValid.success) {
+      setLoading(false);
+      setSubmit(false);
+      setCaptchaError(isCaptchaValid.message);
+      return;
+    }
+    let currForm = { ...formValue };
+    if (currForm.repeatPassword.length > 0) {
+      delete currForm.repeatPassword;
+    }
+    // Delete optional fields only if they're empty/null
+    if (!currForm.number || currForm.number.trim() === "") {
+      delete currForm.number;
+    }
+    if (!currForm.address1 || currForm.address1.trim() === "") {
+      delete currForm.address1;
+    }
+    if (!currForm.address2 || currForm.address2.trim() === "") {
+      delete currForm.address2;
+    }
+    if (!currForm.zipcode || currForm.zipcode.trim() === "") {
+      delete currForm.zipcode;
+    }
+    currForm.email = currForm.email.toLowerCase();
+    const response = await createUser(currForm);
+    if (!response.success) {
+      setRegistrationFail(true);
+      setSubmit(false);
+    } else {
+      setRegistrationFail(false);
+      setSubmit(true);
+    }
+    setLoading(false);
+    setCaptchaError("");
+    setFormValue(initialFormValue);
+  };
+  const updateForm = (e) => {
+    const { name, value } = e.target;
+    setFormValue({ ...formValue, [name]: value });
+  };
+  const validate = validateForm("registration");
+
+  const verifyCaptcha = async () => {
+    let token = captchaRef.current?.getValue();
+    if (token.length === 0) {
+      captchaRef.current?.reset();
+      return { success: false, message: "reCaptcha is mandatory" };
+    }
+    try {
+      const response = await fetch(CAPTCHA_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token }),
+      });
+      console.log(response);
+      if (!response.ok) {
+        throw new Error(response.message);
+      }
+      return { success: true };
+    } catch (error) {
+      if (ENVIRONMENT === "development") console.log("Error in verifyCaptcha:", error.message);
+      return { success: false, message: "Server error: failed to verify CAPTCHA. Please try again later." };
+    } finally {
+      captchaRef.current?.reset();
+    }
+  };
+  return (
+    <motion.main
+      className="register"
+      initial={slideInLeft.initial}
+      whileInView={slideInLeft.whileInView}
+      exit={slideInLeft.exit}
+      transition={slideInLeft.transition}>
+      <h2>{submit && Object.keys(formError).length === 0 ? "Success!" : "Registration"}</h2>
+      {loading ? (
+        <div role="status" className="loader">
+          <p>Almost there...</p>
+          <img
+            alt="Processing request"
+            src="https://media0.giphy.com/media/L05HgB2h6qICDs5Sms/giphy.gif?cid=ecf05e472hf2wk1f2jou3s5fcnx1vek6ggnfcvhsjbeh7v5u&ep=v1_stickers_search&rid=giphy.gif&ct=s"
+          />
+        </div>
+      ) : submit && Object.keys(formError).length === 0 ? (
+        <section className="register__success">
+          <p>You can now log in and make an order!</p>
+          <button
+            className="passive-button-style txt-white"
+            onClick={() => {
+              ResetLocation();
+              activateLoginModal();
+              setSubmit(false);
+            }}
+            aria-label="Log in">
+            Log in
+          </button>
+        </section>
+      ) : (
+        <form className="register__form" onSubmit={handleSubmit}>
+          {registrationFail && <p className="register__error">Seems like this email has already been registered!</p>}
+          <label htmlFor="fullname" className="register__form__field">
+            Full name
+            <input
+              id="fullname"
+              type="text"
+              placeholder="Enter your full name"
+              name="fullname"
+              value={formValue.fullname}
+              onChange={updateForm}
+              aria-labelledby="fullname-error"
+            />
+          </label>
+          <span id="fullname-error" aria-live="polite" className="register__error">
+            {formError.fullname}
+          </span>
+
+          <label htmlFor="email" className="register__form__field">
+            Email address
+            <input
+              id="email"
+              type="text"
+              placeholder="Enter your email (e.g., name@example.com)"
+              name="email"
+              value={formValue.email}
+              onChange={updateForm}
+              aria-labelledby="email-error"
+            />
+          </label>
+          <span id="email-error" aria-live="polite" className="register__error">
+            {formError.email}
+          </span>
+          <label htmlFor="password" className="register__form__field">
+            Password
+            <input
+              id="password"
+              type="password"
+              placeholder="Create a strong password"
+              name="password"
+              value={formValue.password}
+              onChange={updateForm}
+              aria-labelledby="password-error"
+            />
+          </label>
+          <span id="password-error" aria-live="polite" className="register__error">
+            {formError.password}
+          </span>
+          <label htmlFor="repeatPassword" className="register__form__field">
+            Repeat Password
+            <input
+              id="repeatPassword"
+              type="password"
+              placeholder="Repeat password"
+              name="repeatPassword"
+              value={formValue.repeatPassword}
+              onChange={updateForm}
+              aria-labelledby="repeatPassword-error"
+            />
+          </label>
+          <span id="repeatPassword-error" aria-live="polite" className="register__error">
+            {formError.repeatPassword}
+          </span>
+          <label htmlFor="address1" className="register__form__field">
+            Address Line 1
+            <input
+              id="address1"
+              type="text"
+              placeholder="Enter your street address (optional)"
+              name="address1"
+              value={formValue.address1}
+              onChange={updateForm}
+              aria-labelledby="address1-error"
+            />
+          </label>
+          <span aria-live="polite" id="address1-error" className="register__error">
+            {formError.address1}
+          </span>
+          <label htmlFor="address2" className="register__form__field">
+            Address Line 2
+            <input
+              id="address2"
+              type="text"
+              placeholder="Enter apartment, suite, etc. (optional)"
+              name="address2"
+              value={formValue.address2}
+              onChange={updateForm}
+              aria-labelledby="address2-error"
+            />
+          </label>
+          <span aria-live="polite" id="address2-error" className="register__error">
+            {formError.address2}
+          </span>
+          <label htmlFor="zipcode" className="register__form__field">
+            Zip Code
+            <input
+              id="zipcode"
+              type="text"
+              placeholder="Enter your zip code (optional)"
+              name="zipcode"
+              value={formValue.zipcode}
+              onChange={updateForm}
+              aria-labelledby="zipcode-error"
+            />
+          </label>
+          <span aria-live="polite" id="zipcode-error" className="register__error">
+            {formError.zipcode}
+          </span>
+          <label htmlFor="number" className="register__form__field">
+            Phone Number
+            <input
+              id="number"
+              type="text"
+              placeholder="Enter your phone number (optional)"
+              name="number"
+              value={formValue.number}
+              onChange={updateForm}
+              aria-labelledby="number-error"
+            />
+          </label>
+          <span aria-live="polite" id="number-error" className="register__error">
+            {formError.number}
+          </span>
+          <p className="terms-warning register__form__terms">
+            By clicking "Sign Up", you agree to our <Link to="/terms">Terms</Link> and{" "}
+            <Link to="/privacy">Privacy Policy</Link>. You may receive an email notification from us and can opt out any
+            time.
+          </p>
+          <ReCAPTCHA ref={captchaRef} sitekey={CAPTCHA_KEY} theme="dark" aria-describedby="captcha-error" />
+          <span className="captcha-input-validation-error" aria-live="assertive" id="captcha-error">
+            {captchaError}
+          </span>
+          <button className="register__submit" type="submit" aria-label="Sign up">
+            Sign up
+          </button>
+        </form>
+      )}
+    </motion.main>
+  );
+};
+
+export default RegistrationPage;

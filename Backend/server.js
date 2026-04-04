@@ -3,28 +3,83 @@ import helmet from "helmet";
 import morgan from "morgan";
 import cors from "cors";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 
-import itemRoutes from "./routes/itemRoutes.js";
-import { sql } from "../Database/db.js";
+// 1. Import Routes (Notice the .js extensions)
+import itemRoutes from "./routes/itemRoutes.js"; // From server.js
+import indexRouter from "./routes/index.route.js"; // From index.mjs
+import authRoutes from "./routes/authRoutes.js";
+import staffRoutes from "./routes/staffRoutes.js";
+import ingredientRoutes from "./routes/ingredientRoutes.js";
+import recipeRoutes from "./routes/recipeRoutes.js";
+import expenseRoutes from "./routes/expenseRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
+import { ensureProcessCheckoutRoutine } from "./services/processCheckoutRoutine.js";
+import { syncIdentitySequences } from "./services/syncIdentitySequences.js";
+import { ensurePaymentSafetyRoutine } from "./services/paymentSafetyRoutine.js";
+import { ensureOrderStockDeductionRoutine } from "./services/orderStockDeductionRoutine.js";
+import { ensureOrderItemConcurrencyRoutine } from "./services/orderItemConcurrencyRoutine.js";
+import { ensureOrderPaymentCancellationRoutine } from "./services/orderPaymentCancellationRoutine.js";
+import applyRecipeTriggers from "./services/applyRecipeTriggers.js";
+
+// 2. Import Database Connection
+import { sql } from "../Database/db.js"; // From server.js
 
 dotenv.config();
 
 const app = express();
+app.set("trust proxy", 1); // Needed if hosted behind a proxy (from index.mjs)
+
 const PORT = process.env.PORT || 3000;
 
+// 3. Configure CORS (Combining your logic)
+const allowedOrigins =
+  process.env.NODE_ENV === "production"
+    ? ["https://pizza-time-with-react.vercel.app", process.env.FRONTEND_ORIGIN].filter(Boolean)
+    : ["http://localhost:5173", "http://localhost:5174", process.env.FRONTEND_ORIGIN].filter(Boolean);
+
+const localhostRegex = /^http:\/\/localhost:\d+$/;
+
+// 4. Global Middleware
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin) || localhostRegex.test(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS not allowed for origin: ${origin}`));
+    },
+    credentials: true, // Crucial for cookies to work (from index.mjs)
+  })
+);
 app.use(express.json());
-app.use(cors());
-app.use(helmet());
-app.use(morgan("dev"));
+app.use(cookieParser()); // For reading JWT tokens (from index.mjs)
+app.use(helmet());       // Security headers (from server.js)
+app.use(morgan("dev"));  // Request logging (from server.js)
 
-app.use("/api/items", itemRoutes);
+// 5. Apply Routes
+app.use("/api/items", itemRoutes); // Your custom item routes
+app.use("/", indexRouter);         // Your users, captcha, and address routes
+app.use("/api/auth", authRoutes);
+app.use("/api/staff", staffRoutes);
+app.use("/api/ingredients", ingredientRoutes);
+app.use("/api/recipes", recipeRoutes);
+app.use("/api/expenses", expenseRoutes);
+app.use("/api/orders", orderRoutes);
 
+// 6. Global 404 Handler (from index.mjs)
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: "404 - Not Found!" });
+});
+
+// 7. Database Test Query & Server Initialization (from server.js)
 async function testQuery() {
   try {
     const result = await sql`
         SELECT
             o.order_id,
-            oi.total_cost,
             oi.item_quantity,
             i.category,
             i.item_name,
@@ -40,15 +95,32 @@ async function testQuery() {
             LEFT JOIN address a ON o.add_id = a.add_id;
     `;
 
-    console.table(result.slice(0, 10));
+    // Only log the first 2 just to show it works without cluttering the terminal
+    console.table(result.slice(0, 2)); 
     console.log("Database query successful");
   } catch (error) {
     console.error("Error initializing database:", error);
   }
 }
 
-testQuery().then(() => {
+async function initializeServer() {
+  try {
+    await testQuery();
+    await applyRecipeTriggers();
+    await ensureProcessCheckoutRoutine();
+    await ensurePaymentSafetyRoutine();
+    await ensureOrderItemConcurrencyRoutine();
+    await ensureOrderStockDeductionRoutine();
+    await ensureOrderPaymentCancellationRoutine();
+    await syncIdentitySequences();
+
     app.listen(PORT, () => {
-        console.log("Server is running on port " + PORT);
+      console.log(`Server is running on http://localhost:${PORT}`);
     });
-});
+  } catch (error) {
+    console.error("Error initializing server:", error);
+    process.exit(1);
+  }
+}
+
+initializeServer();

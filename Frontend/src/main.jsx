@@ -1,3 +1,5 @@
+import "./core-ui/app.css";
+import "./core-ui/leaflet.css";
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'

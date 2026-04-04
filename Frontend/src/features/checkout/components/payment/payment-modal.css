@@ -1,0 +1,360 @@
+/* Payment Modal Styles */
+
+.payment-modal__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.payment-modal__content {
+  background: white;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Modal Header */
+.payment-modal__header {
+  padding: 2rem;
+  border-bottom: 2px solid #f0f0f0;
+  background: linear-gradient(135deg, #ff6b35 0%, #ffa500 100%);
+  border-radius: 12px 12px 0 0;
+}
+
+.payment-modal__header h2 {
+  color: white;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* Modal Summary */
+.payment-modal__summary {
+  padding: 1.5rem 2rem;
+  background: #f9f9f9;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.payment-modal__summary h4 {
+  color: #333;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+}
+
+.payment-modal__items-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+}
+
+.payment-modal__item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.payment-modal__item span:last-child {
+  color: #ff6b35;
+  font-weight: 600;
+}
+
+.payment-modal__totals {
+  padding: 1rem 0 0 0;
+  border-top: 1px solid #ddd;
+}
+
+.payment-modal__totals p {
+  margin: 0.5rem 0;
+  color: #555;
+  font-size: 0.95rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.payment-modal__totals strong {
+  color: #333;
+  font-weight: 600;
+}
+
+.payment-modal__total-amount {
+  font-size: 1.1rem !important;
+  color: #333 !important;
+  margin-top: 1rem !important;
+  padding-top: 1rem;
+  border-top: 2px solid #ddd;
+}
+
+.payment-modal__total-amount .amount {
+  color: #ff6b35;
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+
+/* Modal Form */
+.payment-modal__form {
+  padding: 2rem;
+}
+
+/* Payment Methods */
+.payment-modal__methods {
+  border: none;
+  padding: 0;
+  margin-bottom: 2rem;
+}
+
+.payment-modal__methods legend {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.payment-modal__method-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.payment-modal__method-option {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.payment-modal__method-option:hover {
+  border-color: #ff6b35;
+  background: #fff9f5;
+}
+
+.payment-modal__method-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin-right: 0.75rem;
+  cursor: pointer;
+  accent-color: #ff6b35;
+}
+
+.payment-modal__method-option input[type="radio"]:checked + .method-label {
+  color: #ff6b35;
+  font-weight: 700;
+}
+
+.method-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #555;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.method-label svg {
+  stroke: currentColor;
+  transition: color 0.3s ease;
+  min-width: 1.5rem;
+}
+
+.payment-modal__method-option input[type="radio"]:checked ~ .method-label svg {
+  color: #ff6b35;
+}
+
+/* Amount Input */
+.payment-modal__amount {
+  margin-bottom: 1.5rem;
+}
+
+.payment-modal__amount label {
+  display: block;
+  color: #333;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.payment-modal__amount-input-group {
+  display: flex;
+  align-items: center;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+  transition: border-color 0.3s ease;
+}
+
+.payment-modal__amount-input-group:focus-within {
+  border-color: #ff6b35;
+}
+
+.currency-symbol {
+  padding: 0.75rem 1rem;
+  background: #f9f9f9;
+  color: #333;
+  font-weight: 600;
+  border-right: 1px solid #e0e0e0;
+}
+
+.payment-modal__amount-input-group input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  font-size: 1rem;
+  outline: none;
+}
+
+.payment-modal__amount-input-group input::placeholder {
+  color: #999;
+}
+
+.payment-modal__amount-info {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0.5rem 0 0 0;
+}
+
+/* Error Messages */
+.payment-modal__error {
+  display: block;
+  color: #e74c3c;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.payment-modal__error-message {
+  background: #ffe0e0;
+  border: 1px solid #e74c3c;
+  color: #c0392b;
+  padding: 1rem;
+  border-radius: 6px;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+
+/* Action Buttons */
+.payment-modal__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.payment-modal__btn-cancel,
+.payment-modal__btn-confirm {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.payment-modal__btn-cancel {
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.payment-modal__btn-cancel:hover:not(:disabled) {
+  background: #e0e0e0;
+  border-color: #999;
+}
+
+.payment-modal__btn-confirm {
+  background: linear-gradient(135deg, #ff6b35 0%, #ffa500 100%);
+  color: white;
+}
+
+.payment-modal__btn-confirm:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+}
+
+.payment-modal__btn-cancel:disabled,
+.payment-modal__btn-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal Note */
+.payment-modal__note {
+  padding: 0 2rem 1.5rem 2rem;
+  font-size: 0.85rem;
+  color: #999;
+  text-align: center;
+  margin: 0;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .payment-modal__content {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .payment-modal__header {
+    padding: 1.5rem;
+  }
+
+  .payment-modal__header h2 {
+    font-size: 1.2rem;
+  }
+
+  .payment-modal__form {
+    padding: 1.5rem;
+  }
+
+  .payment-modal__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-modal__summary {
+    padding: 1rem 1.5rem;
+  }
+
+  .payment-modal__note {
+    padding: 1rem 1.5rem 1.5rem;
+  }
+}

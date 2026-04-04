@@ -1,10 +1,19 @@
-import { Link, useResolvedPath } from "react-router-dom"
-import { ShoppingCartIcon } from "lucide-react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import { HomeIcon, LogOutIcon } from "lucide-react"
 import ThemeSelector from "./ThemeSelector"
 
-function NavBar() {
-  const {pathname} = useResolvedPath()
-  const isHomePage = pathname === "/"
+function NavBar({ handleLogout }) {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const isAdminHome = location.pathname === "/admin"
+  const shouldShowHome =
+    location.pathname.startsWith("/staff") ||
+    location.pathname.startsWith("/admin/items") ||
+    location.pathname.startsWith("/item/") ||
+    location.pathname.startsWith("/recipe/") ||
+    location.pathname.startsWith("/ingredients") ||
+    location.pathname.startsWith("/expenses")
+  const shouldShowLogout = !location.pathname.startsWith("/recipe/")
 
   return (
     <div className="bg-base-100/80 backdrop-blur-lg border-b border-base-content/10 sticky top-0 z-50">
@@ -12,29 +21,40 @@ function NavBar() {
          <div className="navbar px-4 min-h-[4rem] justify-between">
           {/* LOGO */}
           <div className="flex-1 lg:flex-none">
-            <Link to="/" className="hover:opacity-80 transition-opacity">
+            <Link to="/admin" className="hover:opacity-80 transition-opacity">
               <div className="flex items-center gap-2">
-                <ShoppingCartIcon className="size-9 text-primary" />
-                <span 
-                  className="font-semibold font-mono tracking-widest text-2xl
-                    bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary"
-                >
-                  POSTGRESTORE
+                <img src="/images/logo.png" alt="PizzaByte" className="h-9 w-9 object-contain" />
+                <span className="font-semibold font-mono tracking-widest text-2xl bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+                  PizzaByte
                 </span>
               </div>
             </Link>
           </div>
+
           {/* RIGHT SECTION */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {shouldShowHome && (
+              <button
+                className="btn btn-ghost btn-sm gap-2"
+                onClick={() => navigate("/admin")}
+                title="Home"
+              >
+                <HomeIcon className="size-4" />
+                <span className="hidden sm:inline">Home</span>
+              </button>
+            )}
+
             <ThemeSelector />
 
-            {isHomePage && (
-              <div className="indicator">
-                <div className="p-2 rounded-full  hover:bg-base-200 transition-colors">
-                  <ShoppingCartIcon className="size-5" />
-                  <span className="badge badge-sm badge-primary indicator-item">8</span>
-                </div>
-              </div>
+            {handleLogout && shouldShowLogout && (
+              <button 
+                onClick={handleLogout}
+                className="btn btn-ghost btn-sm gap-2"
+                title="Logout"
+              >
+                <LogOutIcon className="size-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
             )}
           </div>
          </div>

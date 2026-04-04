@@ -2,7 +2,7 @@ import { create } from "zustand";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:3000" : "";
+const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 export const useItemStore = create((set, get) => ({
   // items state
@@ -45,7 +45,20 @@ export const useItemStore = create((set, get) => ({
 
     try {
       const { formData } = get(); 
-      await axios.post(`${BASE_URL}/api/items`, formData);
+      
+      // Clean up empty strings for optional fields
+      const dataToSend = {
+        sku: formData.sku,
+        item_name: formData.item_name,
+        category: formData.category,
+        size: formData.size,
+        item_price: formData.item_price,
+        image_url: formData.image_url || null, // Send null if empty
+        status: formData.status || 'continued'
+      };
+
+      console.log('Sending item data:', dataToSend);
+      await axios.post(`${BASE_URL}/api/items`, dataToSend);
       
       await get().fetchItems();
       get().resetForm();
