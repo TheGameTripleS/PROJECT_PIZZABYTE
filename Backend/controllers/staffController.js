@@ -1,5 +1,5 @@
-import { sql } from '../../Database/db.js';
 import bcrypt from 'bcrypt';
+import { sql } from '../../Database/db.js';
 
 const ALLOWED_POSITIONS = ['waiter', 'chef', 'receptionist'];
 
@@ -26,12 +26,12 @@ export const getStaff = async (_req, res) => {
 				s.first_name,
 				s.last_name,
 				s.email,
-				s.position,
+				LOWER(s.position) AS position,
 				s.hourly_rate,
 				COUNT(DISTINCT r.rota_id) AS rota_count
 			FROM staff s
 			LEFT JOIN rota r ON r.staff_id = s.staff_id
-			GROUP BY s.staff_id, s.first_name, s.last_name, s.email, s.position, s.hourly_rate
+			GROUP BY s.staff_id, s.first_name, s.last_name, s.email, LOWER(s.position), s.hourly_rate
 			ORDER BY staff_id DESC
 		`;
 
@@ -65,7 +65,7 @@ export const getStaffRelations = async (req, res) => {
 
 	try {
 		const staff = await sql`
-			SELECT staff_id, first_name, last_name, email, position, hourly_rate
+			SELECT staff_id, first_name, last_name, email, LOWER(position) AS position, hourly_rate
 			FROM staff
 			WHERE staff_id = ${staffId}
 		`;
@@ -98,7 +98,7 @@ export const getStaffRelations = async (req, res) => {
 };
 
 export const createStaff = async (req, res) => {
-	const { first_name, last_name, email, position, hourly_rate } = req.body;
+	const { first_name, last_name, email, position, hourly_rate, password } = req.body;
 
 	if (!first_name || !last_name || !email || !position || hourly_rate === undefined || hourly_rate === null) {
 		return res.status(400).json({
@@ -112,6 +112,30 @@ export const createStaff = async (req, res) => {
 		return res.status(400).json({
 			success: false,
 			message: 'position must be one of: waiter, chef, receptionist',
+		});
+	}
+
+	const normalizedPassword =
+		typeof password === 'string' && password.trim() !== '' ? password.trim() : null;
+
+	if (normalizedPosition === 'receptionist' && !normalizedPassword) {
+		return res.status(400).json({
+			success: false,
+			message: 'password is required for receptionist accounts',
+		});
+	}
+
+	if (normalizedPassword && normalizedPassword.length < 8) {
+		return res.status(400).json({
+			success: false,
+			message: 'password must be at least 8 characters long',
+		});
+	}
+
+	if (normalizedPassword && normalizedPosition !== 'receptionist') {
+		return res.status(400).json({
+			success: false,
+			message: 'only receptionists can have login passwords from staff management',
 		});
 	}
 
@@ -132,9 +156,11 @@ export const createStaff = async (req, res) => {
 			return res.status(409).json({ success: false, message: 'Email already exists for another staff member' });
 		}
 
+		const hashedPassword = normalizedPassword ? await bcrypt.hash(normalizedPassword, 10) : null;
+
 		const created = await sql`
 			INSERT INTO staff (first_name, last_name, email, password, position, hourly_rate)
-			VALUES (${first_name}, ${last_name}, ${email}, NULL, ${normalizedPosition}, ${hourly_rate})
+			VALUES (${first_name}, ${last_name}, ${email}, ${hashedPassword}, ${normalizedPosition}, ${hourly_rate})
 			RETURNING staff_id, first_name, last_name, email, position, hourly_rate
 		`;
 
@@ -147,7 +173,7 @@ export const createStaff = async (req, res) => {
 
 export const updateStaff = async (req, res) => {
 	const { staffId } = req.params;
-	const { first_name, last_name, email, position, hourly_rate } = req.body;
+	const { first_name, last_name, email, position, hourly_rate, password } = req.body;
 
 	if (position !== undefined && position !== null) {
 		const normalizedPosition = String(position).toLowerCase();
@@ -160,6 +186,42 @@ export const updateStaff = async (req, res) => {
 	}
 
 	try {
+		const existingStaff = await sql`
+			SELECT staff_id, position, password
+			FROM staff
+			WHERE staff_id = ${staffId}
+		`;
+
+		if (existingStaff.length === 0) {
+			return res.status(404).json({ success: false, message: 'Staff not found' });
+		}
+
+		const currentStaff = existingStaff[0];
+		const nextPosition = position ? String(position).toLowerCase() : String(currentStaff.position).toLowerCase();
+		const normalizedPassword =
+			typeof password === 'string' && password.trim() !== '' ? password.trim() : null;
+
+		if (nextPosition === 'receptionist' && !currentStaff.password && !normalizedPassword) {
+			return res.status(400).json({
+				success: false,
+				message: 'password is required when assigning receptionist role',
+			});
+		}
+
+		if (normalizedPassword && normalizedPassword.length < 8) {
+			return res.status(400).json({
+				success: false,
+				message: 'password must be at least 8 characters long',
+			});
+		}
+
+		if (normalizedPassword && nextPosition !== 'receptionist') {
+			return res.status(400).json({
+				success: false,
+				message: 'only receptionists can have login passwords from staff management',
+			});
+		}
+
 		if (email !== undefined && email !== null && String(email).trim() !== '') {
 			const existing = await sql`
 				SELECT staff_id FROM staff WHERE email = ${email} AND staff_id <> ${staffId}
@@ -170,6 +232,8 @@ export const updateStaff = async (req, res) => {
 			}
 		}
 
+		const hashedPassword = normalizedPassword ? await bcrypt.hash(normalizedPassword, 10) : null;
+
 		const updated = await sql`
 			UPDATE staff
 			SET
@@ -177,14 +241,11 @@ export const updateStaff = async (req, res) => {
 				last_name = COALESCE(${last_name || null}, last_name),
 				email = COALESCE(${email || null}, email),
 				position = COALESCE(${position ? String(position).toLowerCase() : null}, position),
-				hourly_rate = COALESCE(${hourly_rate ?? null}, hourly_rate)
+				hourly_rate = COALESCE(${hourly_rate ?? null}, hourly_rate),
+				password = COALESCE(${hashedPassword}, password)
 			WHERE staff_id = ${staffId}
 			RETURNING staff_id, first_name, last_name, email, position, hourly_rate
 		`;
-
-		if (updated.length === 0) {
-			return res.status(404).json({ success: false, message: 'Staff not found' });
-		}
 
 		res.status(200).json({ success: true, data: updated[0] });
 	} catch (error) {

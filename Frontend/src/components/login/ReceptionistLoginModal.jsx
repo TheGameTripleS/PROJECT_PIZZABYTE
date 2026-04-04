@@ -1,23 +1,22 @@
 import "./loginModal.css";
-import { useState } from "react";
-import LinkButton from "../LinkButton";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
 import validateForm from "../../utils/validate-form";
-import { useRef } from "react";
-import { useEffect } from "react";
-import { loginUser } from "./api/loginUser";
-import ReceptionistLoginModal from "./ReceptionistLoginModal";
+import { loginReceptionist } from "./api/loginReceptionist";
 
-const LoginModal = ({ setIsLoggedIn, setIsLoginModalOpen, setUser, isLoginModalOpen, hideMenu, setIsReceptionist }) => {
-  const navigate = useNavigate();
+const ReceptionistLoginModal = ({
+  setIsReceptionist,
+  setIsLoggedIn,
+  setUser,
+  close,
+  openUserLogin,
+}) => {
   const [formValue, setFormValue] = useState({ email: "", password: "" });
   const [formError, setFormError] = useState({});
   const [loading, setLoading] = useState(false);
   const [verificationError, setVerificationError] = useState("");
-  const [isReceptionistLoginOpen, setIsReceptionistLoginOpen] = useState(false);
+  const modalRef = useRef();
 
   const validate = validateForm("login");
-  const modalRef = useRef();
 
   const handleValidation = (e) => {
     const { name, value } = e.target;
@@ -27,61 +26,73 @@ const LoginModal = ({ setIsLoggedIn, setIsLoginModalOpen, setUser, isLoginModalO
     }));
   };
 
-  const hideLoginModal = () => {
-    setIsLoginModalOpen(false);
-    setFormValue((prev) => ({ email: prev.email, password: "" }));
-    setFormError({});
-  };
-
   const handleLogin = async (e) => {
     setVerificationError("");
     e.preventDefault();
     setLoading(true);
     setFormError(validate(formValue));
+
+    console.log("🔓 Receptionist Login Attempt - Email:", formValue.email);
+
     if (Object.keys(validate(formValue)).length > 0) {
+      console.log("❌ Form validation failed");
       setLoading(false);
       return;
     }
 
-    const response = await loginUser(formValue.email, formValue.password);
+    const response = await loginReceptionist(formValue.email, formValue.password);
+    console.log("📱 Login Response:", response);
+    
     if (!response.success) {
+      console.log("❌ Login failed:", response.message);
       setVerificationError(response.message);
       setFormError({});
       setFormValue((prev) => ({ ...prev, password: "" }));
     } else {
+      console.log("✅ Login successful");
+      // Set receptionist flag and login
+      setIsReceptionist(true);
+      localStorage.setItem("isReceptionist", "true");
       setUser(response.user);
-      hideLoginModal();
       setFormValue({ email: "", password: "" });
       setFormError({});
       setVerificationError("");
       setIsLoggedIn(true);
-      navigate("/menu");
       localStorage.setItem("loggedIn", true);
+      close();
     }
 
     setLoading(false);
   };
+
   useEffect(() => {
-    if (isLoginModalOpen) {
-      modalRef.current?.showModal();
-    } else {
-      modalRef.current?.close();
-    }
-  }, [isLoginModalOpen]);
+    modalRef.current?.showModal();
+  }, []);
 
   const handleBackdropClick = (event) => {
     if (event.target === modalRef.current) {
-      hideLoginModal();
+      close();
     }
   };
+
   return (
-    <dialog className="modal" ref={modalRef} onClick={handleBackdropClick} aria-labelledby="modal-title">
+    <dialog
+      className="modal"
+      ref={modalRef}
+      onClick={handleBackdropClick}
+      aria-labelledby="receptionist-modal-title"
+    >
       <div className="modal__inner">
-        <button className="modal__inner__close" type="button" aria-label="Close login modal" onClick={hideLoginModal}>
+        <button
+          className="modal__inner__close"
+          type="button"
+          aria-label="Close receptionist login modal"
+          onClick={close}
+        >
           X
         </button>
         <div className="modal__content">
-          <h2 id="modal-title">Log in</h2>
+          <h2 id="receptionist-modal-title">Receptionist Login</h2>
           {loading ? (
             <div role="status" className="loader">
               <p>Almost there...</p>
@@ -93,7 +104,11 @@ const LoginModal = ({ setIsLoggedIn, setIsLoginModalOpen, setUser, isLoginModalO
           ) : (
             <form onSubmit={handleLogin}>
               {verificationError.length > 0 && (
-                <p className="modal__form__error" role="alert" aria-live="polite">
+                <p
+                  className="modal__form__error"
+                  role="alert"
+                  aria-live="polite"
+                >
                   {verificationError}
                 </p>
               )}
@@ -104,7 +119,7 @@ const LoginModal = ({ setIsLoggedIn, setIsLoginModalOpen, setUser, isLoginModalO
                 type="text"
                 autoComplete="true"
                 placeholder="Email"
-                aria-label="Email address"
+                aria-label="Receptionist email address"
                 aria-describedby={formError.email ? "email-error" : undefined}
               />
               <span id="email-error" className="modal__form__error">
@@ -117,65 +132,41 @@ const LoginModal = ({ setIsLoggedIn, setIsLoginModalOpen, setUser, isLoginModalO
                 type="password"
                 autoComplete="true"
                 placeholder="Password"
-                aria-label="Password"
-                aria-describedby={formError.password ? "password-error" : undefined}
+                aria-label="Receptionist password"
+                aria-describedby={
+                  formError.password ? "password-error" : undefined
+                }
               />
               <span id="password-error" className="modal__form__error">
                 {formError.password}
               </span>
               <div className="modal__buttons">
-                <LinkButton
-                  onClick={() => {
-                    hideLoginModal();
-                    hideMenu();
-                  }}
-                  to="/register"
-                  aria-label="Register a new account"
-                  className="modal__buttons__signup">
-                  Sign up
-                </LinkButton>
-                <button
-                  aria-label="Log in to account"
-                  type="submit"
-                  disabled={loading}
-                  className="modal__buttons__login">
-                  Log in
-                </button>
-              </div>
-              <div style={{ marginTop: "12px", textAlign: "center" }}>
                 <button
                   type="button"
                   onClick={() => {
-                    hideLoginModal();
-                    setIsReceptionistLoginOpen(true);
+                    close();
+                    openUserLogin();
                   }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#666",
-                    textDecoration: "underline",
-                    cursor: "pointer",
-                    fontSize: "0.9rem",
-                  }}
-                  aria-label="Login as receptionist">
-                  Receptionist?
+                  className="modal__buttons__signup"
+                  aria-label="Back to user login"
+                >
+                  Back
+                </button>
+                <button
+                  aria-label="Log in as receptionist"
+                  type="submit"
+                  disabled={loading}
+                  className="modal__buttons__login"
+                >
+                  Log in
                 </button>
               </div>
             </form>
           )}
         </div>
       </div>
-      {isReceptionistLoginOpen && (
-        <ReceptionistLoginModal
-          setIsReceptionist={setIsReceptionist}
-          setIsLoggedIn={setIsLoggedIn}
-          setUser={setUser}
-          close={() => setIsReceptionistLoginOpen(false)}
-          openUserLogin={() => setIsReceptionistLoginOpen(false)}
-        />
-      )}
     </dialog>
   );
 };
 
-export default LoginModal;
+export default ReceptionistLoginModal;

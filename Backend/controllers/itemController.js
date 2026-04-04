@@ -31,20 +31,43 @@ export const getItems = async (req, res) => {
 
 export const createItem = async (req, res) => {
     const { sku, item_name, category, size, item_price, image_url, status } = req.body;
-    console.log('Create item request body:', req.body);
 
-    if (!sku || !item_name || !category || !size || !item_price || !image_url) {
-        return res.status(400).json({ success: false, message: 'All fields are required' });
+    console.log('Raw request body:', req.body);
+    console.log('Destructured values:');
+    console.log('  sku:', sku, '(type:', typeof sku, ')');
+    console.log('  item_name:', item_name, '(type:', typeof item_name, ')');
+    console.log('  category:', category, '(type:', typeof category, ')');
+    console.log('  size:', size, '(type:', typeof size, ')');
+    console.log('  item_price:', item_price, '(type:', typeof item_price, ')');
+    console.log('  image_url:', image_url, '(type:', typeof image_url, ')');
+    console.log('  status:', status, '(type:', typeof status, ')');
+
+    // Trim strings and check required fields
+    const trimmedSku = typeof sku === 'string' ? sku.trim() : sku;
+    const trimmedItemName = typeof item_name === 'string' ? item_name.trim() : item_name;
+    const trimmedCategory = typeof category === 'string' ? category.trim() : category;
+    const trimmedSize = typeof size === 'string' ? size.trim() : size;
+    const trimmedPrice = typeof item_price === 'string' ? item_price.trim() : item_price;
+
+    // Only required fields: sku, item_name, category, size, item_price
+    // image_url is optional and can be null
+    if (!trimmedSku || !trimmedItemName || !trimmedCategory || !trimmedSize || !trimmedPrice) {
+        console.log('Validation failed. Missing fields:');
+        if (!trimmedSku) console.log('  - sku is missing');
+        if (!trimmedItemName) console.log('  - item_name is missing');
+        if (!trimmedCategory) console.log('  - category is missing');
+        if (!trimmedSize) console.log('  - size is missing');
+        if (!trimmedPrice) console.log('  - item_price is missing');
+        return res.status(400).json({ success: false, message: 'SKU, item name, category, size, and price are required' });
     }
 
     try {
         const newItem = await sql`
             INSERT INTO item (sku, item_name, category, size, item_price, image_url, status)
-            VALUES (${sku}, ${item_name}, ${category}, ${size}, ${item_price}, ${image_url}, ${status})
+            VALUES (${trimmedSku}, ${trimmedItemName}, ${trimmedCategory}, ${trimmedSize}, ${trimmedPrice}, ${image_url || null}, ${status || 'continued'})
             RETURNING *
         `;
 
-        console.log('Created item:', newItem);
         res.status(201).json({ success: true, data: newItem[0] });
     } catch (error) {
         console.error('Error in createItem function:', error);

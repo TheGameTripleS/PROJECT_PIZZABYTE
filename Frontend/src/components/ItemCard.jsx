@@ -1,5 +1,5 @@
 import React from "react";
-import { EditIcon, Trash2Icon } from "lucide-react";
+import { EditIcon, Trash2Icon, ChefHatIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useItemStore } from "../store/useItemStore";
 
@@ -67,6 +67,10 @@ function ItemCard({ item, renderActions }) {
             <>
               <Link to={`/item/${item.sku}`} className="btn btn-sm btn-info btn-outline">
                 <EditIcon className="size-4" />
+              </Link>
+
+              <Link to={`/recipe/${item.sku}`} className="btn btn-sm btn-warning btn-outline">
+                <ChefHatIcon className="size-4" />
               </Link>
 
               <button

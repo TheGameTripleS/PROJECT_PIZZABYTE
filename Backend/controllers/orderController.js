@@ -185,7 +185,7 @@ const validateOrderPayload = (order, payment) => {
     status: order.status || "pending",
     coupon_code: order.coupon_code?.trim() || null,
     payment_method: payment.method,
-    payment_status: payment.status || "pending",
+    payment_status: payment.status || "Paid",
   };
 };
 
@@ -234,6 +234,96 @@ export const calculateOrderTotal = async (req, res) => {
   }
 };
 
+export const getCustomerOrders = async (req, res) => {
+  try {
+    const customerId = Number(req.params.custId);
+
+    if (!Number.isInteger(customerId) || customerId <= 0) {
+      throw createHttpError(400, "A valid customer ID is required");
+    }
+
+    const orders = await sql.query(
+      `
+        SELECT
+          o.order_id,
+          o.created_at,
+          o.status,
+          o.service_type,
+          p.transaction_id,
+          COALESCE(p.amount, 0) AS total_amount,
+          p.status AS payment_status,
+          p.method AS payment_method,
+          COALESCE(
+            JSON_AGG(
+              JSON_BUILD_OBJECT(
+                'item_id', i.item_id,
+                'item_name', i.item_name,
+                'quantity', oi.item_quantity,
+                'unit_price', ROUND(COALESCE(i.item_price, 0), 2),
+                'line_total', ROUND(COALESCE(i.item_price, 0) * COALESCE(oi.item_quantity, 0), 2)
+              )
+              ORDER BY oi.row_id
+            ) FILTER (WHERE oi.row_id IS NOT NULL),
+            '[]'::json
+          ) AS items
+        FROM orders o
+        LEFT JOIN payment p ON p.order_id = o.order_id
+        LEFT JOIN order_items oi ON oi.order_id = o.order_id
+        LEFT JOIN item i ON i.item_id = oi.item_id
+        WHERE o.cust_id = $1
+        GROUP BY
+          o.order_id,
+          o.created_at,
+          o.status,
+          o.service_type,
+          p.transaction_id,
+          p.amount,
+          p.status,
+          p.method
+        ORDER BY
+          CASE LOWER(COALESCE(o.status, ''))
+            WHEN 'pending' THEN 0
+            WHEN 'processing' THEN 1
+            WHEN 'completed' THEN 2
+            WHEN 'cancelled' THEN 3
+            ELSE 4
+          END,
+          o.created_at DESC
+      `,
+      [customerId]
+    );
+
+    res.status(200).json({
+      success: true,
+      data: orders.map((order) => ({
+        order_id: Number(order.order_id),
+        created_at: order.created_at,
+        status: order.status,
+        service_type: order.service_type,
+        transaction_id: order.transaction_id ? Number(order.transaction_id) : null,
+        total_amount: roundCurrency(order.total_amount),
+        payment_status: order.payment_status,
+        payment_method: order.payment_method,
+        items: Array.isArray(order.items)
+          ? order.items.map((item) => ({
+              item_id: Number(item.item_id),
+              item_name: item.item_name,
+              quantity: Number(item.quantity),
+              unit_price: roundCurrency(item.unit_price),
+              line_total: roundCurrency(item.line_total),
+            }))
+          : [],
+      })),
+    });
+  } catch (error) {
+    console.error("Error fetching customer orders:", error);
+    res.status(error.status || 500).json({
+      success: false,
+      message: error.message || "Failed to fetch customer orders",
+    });
+  }
+};
+
 export const createOrder = async (req, res) => {
   let client;
 
@@ -244,6 +334,7 @@ export const createOrder = async (req, res) => {
     const normalizedItems = normalizeItems(items);
 
     client = await pool.connect();
+    await client.query("BEGIN");
 
     const checkoutResponse = await client.query(
       `
@@ -278,6 +369,7 @@ export const createOrder = async (req, res) => {
       ]
     );
     const [checkoutResult] = checkoutResponse.rows;
+    await client.query("COMMIT");
 
     const pricing = {
       subtotal: roundCurrency(checkoutResult.o_subtotal),
@@ -302,6 +394,14 @@ export const createOrder = async (req, res) => {
       },
     });
   } catch (error) {
+    if (client) {
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("Rollback failed:", rollbackError);
+      }
+    }
+
     console.error("Error creating order:", error);
     res.status(error.status || 500).json({
       success: false,

@@ -11,6 +11,7 @@ import indexRouter from "./routes/index.route.js"; // From index.mjs
 import authRoutes from "./routes/authRoutes.js";
 import staffRoutes from "./routes/staffRoutes.js";
 import ingredientRoutes from "./routes/ingredientRoutes.js";
+import recipeRoutes from "./routes/recipeRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
 import incomeRoutes from "./routes/incomeRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
@@ -20,6 +21,7 @@ import { ensurePaymentSafetyRoutine } from "./services/paymentSafetyRoutine.js";
 import { ensureOrderStockDeductionRoutine } from "./services/orderStockDeductionRoutine.js";
 import { ensureOrderItemConcurrencyRoutine } from "./services/orderItemConcurrencyRoutine.js";
 import { ensureIncomeMetricsRoutine } from "./services/incomeMetricsRoutine.js";
+import { ensureOrderPaymentCancellationRoutine } from "./services/orderPaymentCancellationRoutine.js";
 
 // 2. Import Database Connection
 import { sql } from "../Database/db.js"; // From server.js
@@ -64,6 +66,7 @@ app.use("/", indexRouter);         // Your users, captcha, and address routes
 app.use("/api/auth", authRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/ingredients", ingredientRoutes);
+app.use("/api/recipes", recipeRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/income", incomeRoutes);
 app.use("/api/orders", orderRoutes);
@@ -110,6 +113,7 @@ async function initializeServer() {
     await ensureOrderItemConcurrencyRoutine();
     await ensureOrderStockDeductionRoutine();
     await ensureIncomeMetricsRoutine();
+    await ensureOrderPaymentCancellationRoutine();
     await syncIdentitySequences();
 
     app.listen(PORT, () => {
