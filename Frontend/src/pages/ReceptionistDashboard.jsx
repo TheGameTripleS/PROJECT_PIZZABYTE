@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { BoxIcon, LogOutIcon, ShoppingCartIcon } from "lucide-react";
+import { BoxIcon, LogOutIcon, ShoppingCartIcon, UserRoundCogIcon } from "lucide-react";
 
 function ReceptionistDashboard({ user, handleLogout }) {
   return (
@@ -19,7 +19,7 @@ function ReceptionistDashboard({ user, handleLogout }) {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link to="/reception/orders-today" className="btn btn-primary h-24 text-lg">
             <ShoppingCartIcon className="size-6 mr-2" />
             Orders Today
@@ -28,6 +28,11 @@ function ReceptionistDashboard({ user, handleLogout }) {
           <Link to="/reception/store-stock" className="btn btn-secondary h-24 text-lg">
             <BoxIcon className="size-6 mr-2" />
             Store Stock
+          </Link>
+
+          <Link to="/reception/staff-rota" className="btn btn-accent h-24 text-lg">
+            <UserRoundCogIcon className="size-6 mr-2" />
+            Staff Rota
           </Link>
         </div>
       </div>

@@ -25,6 +25,7 @@ import { ensureIncomeMetricsRoutine } from "./services/incomeMetricsRoutine.js";
 import { ensureOrderPaymentCancellationRoutine } from "./services/orderPaymentCancellationRoutine.js";
 import applyRecipeTriggers from "./services/applyRecipeTriggers.js";
 import { ensureReceptionistStockRoutine } from "./services/receptionistStockRoutine.js";
+import { ensureStaffRotaTimeGuardRoutine } from "./services/staffRotaTimeGuardRoutine.js";
 
 // 2. Import Database Connection
 import { sql } from "../Database/db.js"; // From server.js
@@ -121,6 +122,7 @@ async function initializeServer() {
     await ensureIncomeMetricsRoutine();
     await ensureOrderPaymentCancellationRoutine();
     await ensureReceptionistStockRoutine();
+    await ensureStaffRotaTimeGuardRoutine();
     await syncIdentitySequences();
 
     app.listen(PORT, () => {

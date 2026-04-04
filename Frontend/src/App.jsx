@@ -54,6 +54,7 @@ import RecipePage from "./pages/RecipePage";
 import StaffPage from "./pages/StaffPage";
 import ReceptionistDashboard from "./pages/ReceptionistDashboard";
 import ReceptionistOrdersTodayPage from "./pages/ReceptionistOrdersTodayPage";
+import ReceptionistStaffRotaPage from "./pages/ReceptionistStaffRotaPage";
 import ReceptionistStoreStockPage from "./pages/ReceptionistStoreStockPage";
 import { useThemeStore } from "./store/useThemeStore";
 
@@ -273,6 +274,10 @@ function App() {
             <Route
               path="/reception/orders-today"
               element={<ReceptionistOrdersTodayPage user={user} handleLogout={handleLogoutUser} />}
+            />
+            <Route
+              path="/reception/staff-rota"
+              element={<ReceptionistStaffRotaPage user={user} handleLogout={handleLogoutUser} />}
             />
             <Route path="*" element={<Navigate to="/reception" replace />} />
           </Routes>

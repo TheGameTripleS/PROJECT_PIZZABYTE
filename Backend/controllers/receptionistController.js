@@ -272,6 +272,175 @@ const resolveReceptionistRotaId = async (staffId, client) => {
   return null;
 };
 
+const ensureNonReceptionistStaffExists = async (staffId, client = null) => {
+  const runner = client || sql;
+
+  const rows = client
+    ? await runner.query(
+        `
+          SELECT staff_id, position, first_name, last_name
+          FROM staff
+          WHERE staff_id = $1
+          LIMIT 1
+        `,
+        [staffId]
+      )
+    : await runner`
+        SELECT staff_id, position, first_name, last_name
+        FROM staff
+        WHERE staff_id = ${staffId}
+        LIMIT 1
+      `;
+
+  const staff = client ? rows.rows : rows;
+
+  if (!staff.length) {
+    const error = new Error("Staff not found");
+    error.status = 404;
+    throw error;
+  }
+
+  if (String(staff[0].position || "").toLowerCase() === "receptionist") {
+    const error = new Error("Receptionists cannot be assigned from this panel");
+    error.status = 400;
+    throw error;
+  }
+
+  return staff[0];
+};
+
+export const getAssignableStaff = async (_req, res) => {
+  try {
+    const staff = await sql`
+      SELECT
+        s.staff_id,
+        s.first_name,
+        s.last_name,
+        LOWER(COALESCE(s.position, '')) AS position,
+        s.email,
+        COUNT(DISTINCT r.rota_id) AS rota_count
+      FROM staff s
+      LEFT JOIN rota r ON r.staff_id = s.staff_id
+      WHERE LOWER(COALESCE(s.position, '')) <> 'receptionist'
+      GROUP BY s.staff_id, s.first_name, s.last_name, s.position, s.email
+      ORDER BY s.staff_id DESC
+    `;
+
+    return res.status(200).json({ success: true, data: staff });
+  } catch (error) {
+    console.error("Error in getAssignableStaff:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch assignable staff",
+    });
+  }
+};
+
+export const getStaffRotaForReceptionist = async (req, res) => {
+  const staffId = parseInteger(req.params.staffId);
+
+  if (!staffId) {
+    return res.status(400).json({ success: false, message: "Valid staffId is required" });
+  }
+
+  try {
+    await ensureNonReceptionistStaffExists(staffId);
+
+    const rota = await sql`
+      SELECT rota_id, staff_id, start_time, end_time, work_date
+      FROM rota
+      WHERE staff_id = ${staffId}
+      ORDER BY work_date DESC, start_time DESC
+    `;
+
+    return res.status(200).json({ success: true, data: rota });
+  } catch (error) {
+    console.error("Error in getStaffRotaForReceptionist:", error);
+    return res.status(error.status || 500).json({
+      success: false,
+      message: error.message || "Failed to fetch staff rota",
+    });
+  }
+};
+
+export const assignStaffRotaByReceptionist = async (req, res) => {
+  const staffId = parseInteger(req.params.staffId);
+  const receptionistStaffId = parseInteger(req.body?.receptionist_staff_id);
+  const { work_date, start_time, end_time } = req.body || {};
+
+  if (!staffId || !receptionistStaffId || !work_date || !start_time || !end_time) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "staffId, receptionist_staff_id, work_date, start_time and end_time are required",
+    });
+  }
+
+  const startTimestampText = `${work_date} ${start_time}`;
+  const endTimestampText = `${work_date} ${end_time}`;
+
+  try {
+    await ensureReceptionistExists(receptionistStaffId);
+    await ensureNonReceptionistStaffExists(staffId);
+
+    const timeValidity = await sql`
+      SELECT (${startTimestampText}::timestamp < ${endTimestampText}::timestamp) AS is_valid
+    `;
+
+    if (!timeValidity[0]?.is_valid) {
+      return res.status(400).json({
+        success: false,
+        message: "start_time must be earlier than end_time",
+      });
+    }
+
+    const overlap = await sql`
+      SELECT rota_id
+      FROM rota
+      WHERE staff_id = ${staffId}
+        AND work_date = ${work_date}
+        AND (${startTimestampText}::timestamp < end_time)
+        AND (${endTimestampText}::timestamp > start_time)
+      LIMIT 1
+    `;
+
+    if (overlap.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: "This shift overlaps with an existing rota for this staff",
+      });
+    }
+
+    const created = await sql`
+      INSERT INTO rota (staff_id, start_time, end_time, work_date)
+      VALUES (
+        ${staffId},
+        ${startTimestampText}::timestamp,
+        ${endTimestampText}::timestamp,
+        ${work_date}
+      )
+      RETURNING rota_id, staff_id, start_time, end_time, work_date
+    `;
+
+    return res.status(201).json({ success: true, data: created[0] });
+  } catch (error) {
+    console.error("Error in assignStaffRotaByReceptionist:", error);
+    const message = String(error?.message || "Failed to assign rota");
+
+    if (
+      message.toLowerCase().includes("must be between 09:00 and 17:00") ||
+      message.toLowerCase().includes("invalid rota")
+    ) {
+      return res.status(400).json({ success: false, message });
+    }
+
+    return res.status(error.status || 500).json({
+      success: false,
+      message: error.message || "Failed to assign rota",
+    });
+  }
+};
+
 export const getPendingOrdersToday = async (req, res) => {
   const staffId = parseInteger(req.query.staff_id);
 

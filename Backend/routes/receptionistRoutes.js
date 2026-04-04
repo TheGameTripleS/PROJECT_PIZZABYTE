@@ -1,9 +1,12 @@
 import express from "express";
 import {
 	approvePendingOrder,
+	assignStaffRotaByReceptionist,
 	buyStoreStock,
+	getAssignableStaff,
 	getPendingOrdersToday,
 	getReceptionistStoreStockLogs,
+	getStaffRotaForReceptionist,
 	getStoreStockIngredients,
 	loginReceptionist,
 } from "../controllers/receptionistController.js";
@@ -17,5 +20,8 @@ router.get("/store-stock/logs/:staffId", getReceptionistStoreStockLogs);
 router.post("/store-stock/purchase", buyStoreStock);
 router.get("/orders/today/pending", getPendingOrdersToday);
 router.post("/orders/:orderId/approve", approvePendingOrder);
+router.get("/staff/assignable", getAssignableStaff);
+router.get("/staff/:staffId/rota", getStaffRotaForReceptionist);
+router.post("/staff/:staffId/rota", assignStaffRotaByReceptionist);
 
 export default router;
