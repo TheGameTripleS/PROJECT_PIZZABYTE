@@ -70,7 +70,7 @@ CREATE TABLE recipe (
     ing_amount   INT,
     cost_per_ing NUMERIC(10,2),
     
-    FOREIGN KEY (item_id) REFERENCES item(item_id),
+    FOREIGN KEY (item_id) REFERENCES item(item_id) ON DELETE CASCADE,
     FOREIGN KEY (ing_id) REFERENCES ingredients(ing_id)
 );
 

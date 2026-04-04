@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useState, useRef } from "react";
 import {
   Trash2Icon,
   RefreshCwIcon,
@@ -8,8 +8,10 @@ import {
   KeyRoundIcon,
 } from "lucide-react";
 import { useStaffStore } from "../store/useStaffStore";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 function StaffPage() {
+  const confirmDialogRef = useRef(null);
   const {
     staff,
     loading,
@@ -28,6 +30,20 @@ function StaffPage() {
 
   const [staffInputs, setStaffInputs] = useState({});
   const [expandedStaffId, setExpandedStaffId] = useState(null);
+
+  const handleDeleteClick = (staffMember) => {
+    const fullName = `${staffMember.first_name} ${staffMember.last_name}`;
+    confirmDialogRef.current?.openConfirm({
+      title: 'Delete Staff Member',
+      message: `Are you sure you want to delete "${fullName}"? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      isDangerous: true,
+      onConfirm: async () => {
+        await deleteStaff(staffMember.staff_id);
+      },
+    });
+  };
   const [passwordModal, setPasswordModal] = useState({
     isOpen: false,
     staffId: null,
@@ -352,7 +368,7 @@ function StaffPage() {
                           ) : null}
                           <button
                             className="btn btn-sm btn-error btn-outline"
-                            onClick={() => deleteStaff(person.staff_id)}
+                            onClick={() => handleDeleteClick(person)}
                           >
                             <Trash2Icon className="size-4" />
                           </button>
@@ -465,6 +481,7 @@ function StaffPage() {
           </form>
         </dialog>
       ) : null}
+      <ConfirmDialog ref={confirmDialogRef} />
     </main>
   );
 }

@@ -8,9 +8,36 @@ import { formatTitleCase, formatSKUBase, isSKUValid } from "../constants/formatt
 
 function AddItemModal() {
   const { addItem, formData, setFormData, loading } = useItemStore();
+  const [showCustomCategory, setShowCustomCategory] = React.useState(false);
+
+  const predefinedCategories = ["Pizza", "Pasta", "Drinks"];
+  const predefinedSizes = ["Large", "Medium", "Small", "Regular"];
+
+  React.useEffect(() => {
+    // Show custom input if category is not in predefined list
+    if (formData.category && !predefinedCategories.includes(formData.category)) {
+      setShowCustomCategory(true);
+    }
+  }, []);
+
+  const handleCategoryChange = (e) => {
+    const value = e.target.value;
+    if (value === "custom") {
+      setShowCustomCategory(true);
+      setFormData({ ...formData, category: "" });
+    } else {
+      setShowCustomCategory(false);
+      setFormData({ ...formData, category: value });
+    }
+  };
+
+  const handleCustomCategoryChange = (e) => {
+    const customCategory = formatTitleCase(e.target.value);
+    setFormData({ ...formData, category: customCategory });
+  };
 
   const handleSizeChange = (e) => {
-    const newSize = formatTitleCase(e.target.value);
+    const newSize = e.target.value;
     const firstLetter = newSize.charAt(0).toUpperCase();
     
     // Auto-update the 3rd part of the SKU if it exists
@@ -74,29 +101,45 @@ function AddItemModal() {
             <div className="form-control">
               <label className="label"><span className="label-text font-medium">Category</span></label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content/50"><TagIcon className="size-5" /></div>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content/50 z-10"><TagIcon className="size-5" /></div>
+                <select
+                  className="select select-bordered w-full pl-10"
+                  value={showCustomCategory ? "custom" : (formData.category || "")}
+                  onChange={handleCategoryChange}
+                >
+                  <option value="">Select a category</option>
+                  {predefinedCategories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                  <option value="custom">+ Enter custom category</option>
+                </select>
+              </div>
+              {showCustomCategory && (
                 <input
                   type="text"
-                  placeholder="Pizza, Side..."
-                  className="input input-bordered w-full pl-10"
+                  placeholder="Enter custom category"
+                  className="input input-bordered w-full mt-2"
                   value={formData.category || ""}
-                  onChange={(e) => setFormData({ ...formData, category: formatTitleCase(e.target.value) })}
+                  onChange={handleCustomCategoryChange}
                 />
-              </div>
+              )}
             </div>
 
             {/* SIZE */}
             <div className="form-control">
               <label className="label"><span className="label-text font-medium">Size</span></label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content/50"><MaximizeIcon className="size-5" /></div>
-                <input
-                  type="text"
-                  placeholder="Large, Regular..."
-                  className="input input-bordered w-full pl-10"
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content/50 z-10"><MaximizeIcon className="size-5" /></div>
+                <select
+                  className="select select-bordered w-full pl-10"
                   value={formData.size || ""}
                   onChange={handleSizeChange}
-                />
+                >
+                  <option value="">Select a size</option>
+                  {predefinedSizes.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
               </div>
             </div>
 

@@ -1,8 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { RefreshCwIcon, SaladIcon, Trash2Icon } from "lucide-react";
 import { useIngredientStore } from "../store/useIngredientStore";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 function IngredientsPage() {
+  const confirmDialogRef = useRef(null);
   const {
     ingredients,
     loading,
@@ -13,6 +15,19 @@ function IngredientsPage() {
     addIngredient,
     deleteIngredient,
   } = useIngredientStore();
+
+  const handleDeleteClick = (ingredient) => {
+    confirmDialogRef.current?.openConfirm({
+      title: 'Delete Ingredient',
+      message: `Are you sure you want to delete "${ingredient.ing_name}"? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      isDangerous: true,
+      onConfirm: async () => {
+        await deleteIngredient(ingredient.ing_id);
+      },
+    });
+  };
 
   useEffect(() => {
     fetchIngredients();
@@ -114,7 +129,7 @@ function IngredientsPage() {
                   <td>
                     <button
                       className="btn btn-sm btn-error btn-outline"
-                      onClick={() => deleteIngredient(ingredient.ing_id)}
+                      onClick={() => handleDeleteClick(ingredient)}
                     >
                       <Trash2Icon className="size-4" />
                     </button>
@@ -125,6 +140,7 @@ function IngredientsPage() {
           </table>
         </div>
       )}
+      <ConfirmDialog ref={confirmDialogRef} />
     </main>
   );
 }
