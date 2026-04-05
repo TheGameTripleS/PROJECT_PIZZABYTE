@@ -39,6 +39,7 @@ import Payment from "./features/checkout/components/payment/Payment";
 import { updateUser } from "./api/updateUser";
 import { logoutUser } from "./api/logoutUser";
 import { validateJWT } from "./api/validateJWT";
+import { validateReceptionistJWT } from "./api/validateReceptionistJWT";
 
 // NEW INTEGRATIONS: Theme Store and Admin Dashboard
 // (Ensure these files exist in your local project)
@@ -90,20 +91,43 @@ function App() {
     let isMounted = true;
 
     (async () => {
-      const response = await validateJWT();
-      if (!isMounted) return;
+      if (receptionistSaved) {
+        const response = await validateReceptionistJWT();
+        if (!isMounted) return;
 
-      if (!response.success) {
-        setIsLoggedIn(false);
-        setIsAdmin(false);
-        setIsReceptionist(false);
-        localStorage.removeItem("loggedIn");
-        localStorage.removeItem("isAdmin");
-        localStorage.removeItem("isReceptionist");
+        if (!response.success) {
+          setIsLoggedIn(false);
+          setIsReceptionist(false);
+          setUser(null);
+          localStorage.removeItem("loggedIn");
+          localStorage.removeItem("isReceptionist");
+          localStorage.removeItem("receptionistUser");
+        } else {
+          setIsLoggedIn(true);
+          setIsReceptionist(true);
+          setUser(response.user);
+          localStorage.setItem("loggedIn", true);
+          localStorage.setItem("isReceptionist", "true");
+          localStorage.setItem("receptionistUser", JSON.stringify(response.user));
+        }
       } else {
-        setIsLoggedIn(true);
-        setUser(response.user);
-        localStorage.setItem("loggedIn", true);
+        const response = await validateJWT();
+        if (!isMounted) return;
+
+        if (!response.success) {
+          setIsLoggedIn(false);
+          setIsAdmin(false);
+          setIsReceptionist(false);
+          setUser(null);
+          localStorage.removeItem("loggedIn");
+          localStorage.removeItem("isAdmin");
+          localStorage.removeItem("isReceptionist");
+          localStorage.removeItem("receptionistUser");
+        } else {
+          setIsLoggedIn(true);
+          setUser(response.user);
+          localStorage.setItem("loggedIn", true);
+        }
       }
     })();
 
@@ -146,6 +170,7 @@ function App() {
       localStorage.removeItem("loggedIn");
       localStorage.removeItem("isAdmin");
       localStorage.removeItem("isReceptionist");
+      localStorage.removeItem("receptionistUser");
 
       // FORCE REDIRECT TO HOME PAGE
       navigate("/"); // <--- ADD THIS LINE

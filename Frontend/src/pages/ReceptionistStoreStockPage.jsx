@@ -9,7 +9,6 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 function ReceptionistStoreStockPage({ user, handleLogout }) {
   const navigate = useNavigate();
   const [ingredients, setIngredients] = useState([]);
-  const [stockLogs, setStockLogs] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -31,20 +30,8 @@ function ReceptionistStoreStockPage({ user, handleLogout }) {
     }
   };
 
-  const fetchStockLogs = async () => {
-    if (!user?.staff_id) return;
-    try {
-      const response = await axios.get(`${BASE_URL}/receptionist/store-stock/logs/${user.staff_id}`);
-      setStockLogs(response.data?.data || []);
-    } catch (error) {
-      console.error("Error in fetchStockLogs:", error);
-      toast.error(error.response?.data?.message || "Failed to fetch stock logs");
-    }
-  };
-
   useEffect(() => {
     fetchIngredients();
-    fetchStockLogs();
   }, [user?.staff_id]);
 
   const handlePurchase = async (e) => {
@@ -63,7 +50,8 @@ function ReceptionistStoreStockPage({ user, handleLogout }) {
       });
 
       setFormData((prev) => ({ ...prev, quantity: "" }));
-      await fetchStockLogs();
+      // Refresh the ingredients list to get the updated 'current_stock'
+      await fetchIngredients();
       toast.success("Stock added successfully");
     } catch (error) {
       console.error("Error in handlePurchase:", error);
@@ -78,7 +66,7 @@ function ReceptionistStoreStockPage({ user, handleLogout }) {
       <div className="flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="text-center md:text-left">
           <h1 className="text-3xl font-bold">Store Stock</h1>
-          <p className="text-base-content/70 mt-2">Buy ingredient quantity and record stock log entries.</p>
+          <p className="text-base-content/70 mt-2">Buy ingredient quantity and view current stock levels.</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -128,34 +116,36 @@ function ReceptionistStoreStockPage({ user, handleLogout }) {
       <div className="card bg-base-100 border border-base-content/10 shadow-sm">
         <div className="card-body">
           <div className="flex items-center justify-between">
-            <h2 className="card-title text-lg">Recent Store Stock Logs</h2>
-            <button className="btn btn-ghost btn-circle" onClick={fetchStockLogs}>
+            <h2 className="card-title text-lg">Current Ingredient Stock</h2>
+            <button className="btn btn-ghost btn-circle" onClick={fetchIngredients}>
               <RefreshCwIcon className="size-5" />
             </button>
           </div>
 
-          {stockLogs.length === 0 ? (
-            <p className="text-base-content/70">No stock buying logs found yet.</p>
+          {ingredients.length === 0 ? (
+            <p className="text-base-content/70">No ingredients found.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="table table-sm">
                 <thead>
                   <tr>
-                    <th>Log ID</th>
-                    <th>Ingredient</th>
-                    <th>Quantity</th>
-                    <th>Rota ID</th>
-                    <th>Created At</th>
+                    <th>ID</th>
+                    <th>Ingredient Name</th>
+                    <th>Unit Measurement</th>
+                    <th>Unit Price</th>
+                    <th>Current Stock</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {stockLogs.map((row) => (
-                    <tr key={row.log_id}>
-                      <td>{row.log_id}</td>
+                  {ingredients.map((row) => (
+                    <tr key={row.ing_id}>
+                      <td>{row.ing_id}</td>
                       <td>{row.ing_name}</td>
-                      <td>{row.change_amount}</td>
-                      <td>{row.rota_id}</td>
-                      <td>{row.created_at ? new Date(row.created_at).toLocaleString() : "-"}</td>
+                      <td>{row.meas}</td>
+                      <td>{row.ing_price}</td>
+                      <td className={row.current_stock <= 0 ? "text-error font-bold" : "text-success font-bold"}>
+                        {row.current_stock}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

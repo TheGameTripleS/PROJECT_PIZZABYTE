@@ -167,7 +167,7 @@ function ReceptionistStaffRotaPage({ user, handleLogout }) {
           </h2>
 
           <p className="text-sm text-base-content/70">
-            Allowed shift window is 09:00 to 17:00. Any shift outside this range will be rejected.
+            Allowed shift window is 08:00 to 21:00. Any shift outside this range will be rejected.
           </p>
 
           <input

@@ -53,6 +53,7 @@ const ReceptionistLoginModal = ({
       // Set receptionist flag and login
       setIsReceptionist(true);
       localStorage.setItem("isReceptionist", "true");
+      localStorage.setItem("receptionistUser", JSON.stringify(response.user));
       setUser(response.user);
       setFormValue({ email: "", password: "" });
       setFormError({});

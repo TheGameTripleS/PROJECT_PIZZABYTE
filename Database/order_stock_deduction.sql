@@ -17,14 +17,14 @@ BEGIN
     INTO v_chef_rota_id
     FROM rota
     JOIN staff ON staff.staff_id = rota.staff_id
-    WHERE staff.position = 'Chef'
-      AND CURRENT_TIMESTAMP >= rota.start_time
-      AND CURRENT_TIMESTAMP <= rota.end_time
+    WHERE staff.position = 'receptionist'
+      AND (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Dhaka') >= rota.start_time
+      AND (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Dhaka') <= rota.end_time
     ORDER BY rota.start_time ASC, rota.rota_id ASC
     LIMIT 1;
 
     IF v_chef_rota_id IS NULL THEN
-        RAISE EXCEPTION 'No chef is currently on duty';
+        RAISE EXCEPTION 'We currently not available';
     END IF;
 
     INSERT INTO stock_log (ing_id, rota_id, change_amount, created_at)

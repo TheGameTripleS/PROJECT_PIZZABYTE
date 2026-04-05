@@ -97,15 +97,74 @@ export const loginReceptionist = async (req, res) => {
   }
 };
 
-export const getStoreStockIngredients = async (_req, res) => {
+export const validateReceptionistToken = async (req, res) => {
+  console.log("🔐 Receptionist Token Validation Request");
+
   try {
-    const ingredients = await sql`
-      SELECT ing_id, ing_name, meas, ing_price
-      FROM ingredients
-      ORDER BY ing_name ASC
+    const token = req.cookies.token;
+
+    if (!token) {
+      console.log("❌ No token found in cookies");
+      return res.status(401).json({ success: false, message: "No token provided" });
+    }
+
+    const decoded = jwt.verify(token, secret);
+    console.log("✅ Token verified successfully for:", decoded.email);
+
+    const staff = await sql`
+      SELECT staff_id, first_name, last_name, email, position 
+      FROM staff 
+      WHERE staff_id = ${decoded.id} AND position = 'receptionist'
     `;
 
-    return res.status(200).json({ success: true, data: ingredients });
+    if (staff.length === 0) {
+      console.log("❌ Receptionist not found or not a receptionist anymore");
+      return res.status(401).json({ success: false, message: "Receptionist not found" });
+    }
+
+    const formattedReceptionist = formatReceptionistData(staff[0]);
+    console.log("✅ Receptionist token validated, returning user data");
+
+    return res.status(200).json({ success: true, user: formattedReceptionist });
+  } catch (error) {
+    console.error("❌ Error in validateReceptionistToken:", error.message);
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired token",
+    });
+  }
+};
+
+export const getStoreStockIngredients = async (_req, res) => {
+  try {
+    // 1. We LEFT JOIN the stock_log to get the history.
+    // 2. We use SUM(change_amount) to add up all positive and negative changes.
+    // 3. We use COALESCE to ensure items with NO logs return 0 instead of null.
+    // 4. We cast it ::integer so Postgres knows it's a standard number.
+    const result = await sql`
+      SELECT 
+        i.ing_id, 
+        i.ing_name, 
+        i.meas, 
+        i.ing_price,
+        COALESCE(SUM(sl.change_amount), 0)::integer AS current_stock
+      FROM ingredients i
+      LEFT JOIN stock_log sl ON i.ing_id = sl.ing_id
+      GROUP BY i.ing_id, i.ing_name, i.meas, i.ing_price
+      ORDER BY i.ing_name ASC
+    `;
+
+    const rows = Array.isArray(result) ? result : result.rows || [];
+
+    const formattedData = rows.map((row) => ({
+      ing_id: Number(row.ing_id),
+      ing_name: row.ing_name,
+      meas: row.meas,
+      ing_price: Number(row.ing_price),
+      current_stock: Number(row.current_stock) || 0 
+    }));
+
+    return res.status(200).json({ success: true, data: formattedData });
   } catch (error) {
     console.error("Error in getStoreStockIngredients:", error);
     return res.status(500).json({ success: false, message: "Internal server error" });
@@ -157,7 +216,7 @@ export const getReceptionistStoreStockLogs = async (req, res) => {
         sl.rota_id,
         sl.change_amount,
         sl.created_at,
-        r.work_date,
+        TO_CHAR(r.work_date, 'YYYY-MM-DD') AS work_date,
         r.start_time,
         r.end_time
       FROM stock_log sl
@@ -347,7 +406,12 @@ export const getStaffRotaForReceptionist = async (req, res) => {
     await ensureNonReceptionistStaffExists(staffId);
 
     const rota = await sql`
-      SELECT rota_id, staff_id, start_time, end_time, work_date
+      SELECT 
+        rota_id, 
+        staff_id, 
+        TO_CHAR(start_time, 'YYYY-MM-DD HH24:MI:SS') AS start_time,
+        TO_CHAR(end_time, 'YYYY-MM-DD HH24:MI:SS') AS end_time,
+        TO_CHAR(work_date, 'YYYY-MM-DD') AS work_date
       FROM rota
       WHERE staff_id = ${staffId}
       ORDER BY work_date DESC, start_time DESC
@@ -419,7 +483,7 @@ export const assignStaffRotaByReceptionist = async (req, res) => {
         ${endTimestampText}::timestamp,
         ${work_date}
       )
-      RETURNING rota_id, staff_id, start_time, end_time, work_date
+      RETURNING rota_id, staff_id, start_time, end_time, TO_CHAR(work_date, 'YYYY-MM-DD') AS work_date
     `;
 
     return res.status(201).json({ success: true, data: created[0] });

@@ -4,6 +4,7 @@ import morgan from "morgan";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import cron from "node-cron";
 
 // 1. Import Routes (Notice the .js extensions)
 import itemRoutes from "./routes/itemRoutes.js"; // From server.js
@@ -26,6 +27,7 @@ import { ensureOrderPaymentCancellationRoutine } from "./services/orderPaymentCa
 import applyRecipeTriggers from "./services/applyRecipeTriggers.js";
 import { ensureReceptionistStockRoutine } from "./services/receptionistStockRoutine.js";
 import { ensureStaffRotaTimeGuardRoutine } from "./services/staffRotaTimeGuardRoutine.js";
+import { createAutoCancelRoutine } from "./services/auto_cancel_routine.js";
 
 // 2. Import Database Connection
 import { sql } from "../Database/db.js"; // From server.js
@@ -40,8 +42,15 @@ const PORT = process.env.PORT || 3000;
 // 3. Configure CORS (Combining your logic)
 const allowedOrigins =
   process.env.NODE_ENV === "production"
-    ? ["https://pizza-time-with-react.vercel.app", process.env.FRONTEND_ORIGIN].filter(Boolean)
-    : ["http://localhost:5173", "http://localhost:5174", process.env.FRONTEND_ORIGIN].filter(Boolean);
+    ? [
+        "https://pizza-time-with-react.vercel.app",
+        process.env.FRONTEND_ORIGIN,
+      ].filter(Boolean)
+    : [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        process.env.FRONTEND_ORIGIN,
+      ].filter(Boolean);
 
 const localhostRegex = /^http:\/\/localhost:\d+$/;
 
@@ -57,16 +66,16 @@ app.use(
       return callback(new Error(`CORS not allowed for origin: ${origin}`));
     },
     credentials: true, // Crucial for cookies to work (from index.mjs)
-  })
+  }),
 );
 app.use(express.json());
 app.use(cookieParser()); // For reading JWT tokens (from index.mjs)
-app.use(helmet());       // Security headers (from server.js)
-app.use(morgan("dev"));  // Request logging (from server.js)
+app.use(helmet()); // Security headers (from server.js)
+app.use(morgan("dev")); // Request logging (from server.js)
 
 // 5. Apply Routes
 app.use("/api/items", itemRoutes); // Your custom item routes
-app.use("/", indexRouter);         // Your users, captcha, and address routes
+app.use("/", indexRouter); // Your users, captcha, and address routes
 app.use("/api/auth", authRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/ingredients", ingredientRoutes);
@@ -104,16 +113,42 @@ async function testQuery() {
     `;
 
     // Only log the first 2 just to show it works without cluttering the terminal
-    console.table(result.slice(0, 2)); 
+    console.table(result.slice(0, 2));
     console.log("Database query successful");
   } catch (error) {
     console.error("Error initializing database:", error);
   }
 }
 
+cron.schedule(
+  "0 0 * * *",
+  async () => {
+    console.log(
+      "⏳ Running scheduled job: Auto-cancelling expired pending orders...",
+    );
+
+    try {
+      const result =
+        await sql`SELECT auto_cancel_expired_pending_orders() AS cancelled_count`;
+      const count = result[0].cancelled_count;
+
+      console.log(
+        `✅ Scheduled job complete. Cancelled ${count} expired orders.`,
+      );
+    } catch (error) {
+      console.error("❌ Error running auto-cancel job:", error);
+    }
+  },
+  {
+    scheduled: true,
+    timezone: "Asia/Dhaka",
+  },
+);
+
 async function initializeServer() {
   try {
     await testQuery();
+    await createAutoCancelRoutine();
     await applyRecipeTriggers();
     await ensureProcessCheckoutRoutine();
     await ensurePaymentSafetyRoutine();

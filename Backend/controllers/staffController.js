@@ -47,7 +47,12 @@ export const getStaffRota = async (req, res) => {
 
 	try {
 		const rota = await sql`
-			SELECT rota_id, staff_id, start_time, end_time, work_date
+			SELECT 
+				rota_id, 
+				staff_id, 
+				TO_CHAR(start_time, 'YYYY-MM-DD HH24:MI:SS') AS start_time,
+				TO_CHAR(end_time, 'YYYY-MM-DD HH24:MI:SS') AS end_time,
+				TO_CHAR(work_date, 'YYYY-MM-DD') AS work_date
 			FROM rota
 			WHERE staff_id = ${staffId}
 			ORDER BY work_date DESC, start_time DESC

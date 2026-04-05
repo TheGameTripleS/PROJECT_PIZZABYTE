@@ -9,12 +9,14 @@ import {
 	getStaffRotaForReceptionist,
 	getStoreStockIngredients,
 	loginReceptionist,
+	validateReceptionistToken,
 } from "../controllers/receptionistController.js";
 
 const router = express.Router();
 
 // POST /api/receptionist/login
 router.post("/login", loginReceptionist);
+router.get("/validate", validateReceptionistToken);
 router.get("/store-stock/ingredients", getStoreStockIngredients);
 router.get("/store-stock/logs/:staffId", getReceptionistStoreStockLogs);
 router.post("/store-stock/purchase", buyStoreStock);
