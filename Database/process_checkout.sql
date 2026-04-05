@@ -23,7 +23,7 @@ AS $$
 DECLARE
     v_order_id INT;
     v_transaction_id INT;
-    v_created_at TIMESTAMP := CURRENT_TIMESTAMP;
+    v_created_at TIMESTAMP := CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Dhaka';
     v_receptionist_staff_id INT := NULL;
     v_receptionist_rota_id INT := NULL;
     v_subtotal NUMERIC(10,2) := 0;
@@ -86,8 +86,8 @@ BEGIN
     FROM rota
     JOIN staff ON staff.staff_id = rota.staff_id
     WHERE staff.position = 'receptionist'
-      AND (v_created_at AT TIME ZONE 'Asia/Dhaka') >= rota.start_time
-      AND (v_created_at AT TIME ZONE 'Asia/Dhaka') <= rota.end_time
+      AND v_created_at >= rota.start_time
+      AND v_created_at <= rota.end_time
     ORDER BY rota.start_time ASC, rota.rota_id ASC
     LIMIT 1;
 
