@@ -3,6 +3,21 @@ import { sql } from '../../Database/db.js';
 
 const ALLOWED_POSITIONS = ['waiter', 'chef', 'receptionist'];
 
+const isReceptionist = async (staffId) => {
+	const staff = await sql`
+		SELECT staff_id, position
+		FROM staff
+		WHERE staff_id = ${staffId}
+	`;
+
+	if (staff.length === 0) {
+		return { exists: false, receptionist: false };
+	}
+
+	const receptionist = String(staff[0].position || '').toLowerCase() === 'receptionist';
+	return { exists: true, receptionist };
+};
+
 export const getStaff = async (_req, res) => {
 	try {
 		const staff = await sql`
@@ -257,5 +272,140 @@ export const deleteStaff = async (req, res) => {
 	} catch (error) {
 		console.error('Error in deleteStaff function:', error);
 		res.status(500).json({ success: false, message: 'Internal server error' });
+	}
+};
+
+export const getReceptionists = async (_req, res) => {
+	try {
+		const receptionists = await sql`
+			SELECT
+				s.staff_id,
+				s.first_name,
+				s.last_name,
+				s.email,
+				s.position,
+				COUNT(DISTINCT r.rota_id) AS rota_count
+			FROM staff s
+			LEFT JOIN rota r ON r.staff_id = s.staff_id
+			WHERE LOWER(COALESCE(s.position, '')) = 'receptionist'
+			GROUP BY s.staff_id, s.first_name, s.last_name, s.email, s.position
+			ORDER BY s.staff_id DESC
+		`;
+
+		res.status(200).json({ success: true, data: receptionists });
+	} catch (error) {
+		console.error('Error in getReceptionists function:', error);
+		res.status(500).json({ success: false, message: 'Internal server error' });
+	}
+};
+
+export const setReceptionistPassword = async (req, res) => {
+	const { staffId } = req.params;
+	const { password } = req.body;
+
+	if (!password || String(password).trim().length < 6) {
+		return res.status(400).json({
+			success: false,
+			message: 'Password is required and must be at least 6 characters',
+		});
+	}
+
+	try {
+		const staffStatus = await isReceptionist(staffId);
+		if (!staffStatus.exists) {
+			return res.status(404).json({ success: false, message: 'Staff not found' });
+		}
+
+		if (!staffStatus.receptionist) {
+			return res.status(400).json({ success: false, message: 'Password can only be set for receptionists' });
+		}
+
+		const hashedPassword = await bcrypt.hash(String(password), 10);
+
+		await sql`
+			UPDATE staff
+			SET password = ${hashedPassword}
+			WHERE staff_id = ${staffId}
+		`;
+
+		return res.status(200).json({ success: true, message: 'Receptionist password updated successfully' });
+	} catch (error) {
+		console.error('Error in setReceptionistPassword function:', error);
+		return res.status(500).json({ success: false, message: 'Internal server error' });
+	}
+};
+
+export const assignReceptionistRota = async (req, res) => {
+	const { staffId } = req.params;
+	const { work_date, start_time, end_time } = req.body;
+
+	if (!work_date || !start_time || !end_time) {
+		return res.status(400).json({
+			success: false,
+			message: 'work_date, start_time and end_time are required',
+		});
+	}
+
+	const startTimestampText = `${work_date} ${start_time}`;
+	const endTimestampText = `${work_date} ${end_time}`;
+
+	try {
+		await sql`
+			SELECT setval(
+				pg_get_serial_sequence('rota', 'rota_id'),
+				COALESCE((SELECT MAX(rota_id) FROM rota), 1),
+				true
+			)
+		`;
+
+		const staffStatus = await isReceptionist(staffId);
+		if (!staffStatus.exists) {
+			return res.status(404).json({ success: false, message: 'Staff not found' });
+		}
+
+		if (!staffStatus.receptionist) {
+			return res.status(400).json({ success: false, message: 'Rota can only be assigned to receptionists' });
+		}
+
+		const timeValidity = await sql`
+			SELECT (${startTimestampText}::timestamp < ${endTimestampText}::timestamp) AS is_valid
+		`;
+
+		if (!timeValidity[0]?.is_valid) {
+			return res.status(400).json({ success: false, message: 'start_time must be earlier than end_time' });
+		}
+
+		const overlap = await sql`
+			SELECT rota_id
+			FROM rota
+			WHERE staff_id = ${staffId}
+			  AND work_date = ${work_date}
+			  AND (${startTimestampText}::timestamp < end_time)
+			  AND (${endTimestampText}::timestamp > start_time)
+			LIMIT 1
+		`;
+
+		if (overlap.length > 0) {
+			return res.status(409).json({
+				success: false,
+				message: 'This shift overlaps with an existing rota for the receptionist',
+			});
+		}
+
+		const created = await sql`
+			INSERT INTO rota (staff_id, start_time, end_time, work_date)
+			VALUES (
+				${staffId},
+				${startTimestampText}::timestamp,
+				${endTimestampText}::timestamp,
+				${work_date}
+			)
+			RETURNING rota_id, staff_id, start_time, end_time, work_date
+		`;
+
+		return res.status(201).json({ success: true, data: created[0] });
+	} catch (error) {
+		console.error('Error in assignReceptionistRota function:', error);
+		return res.status(500).json({ success: false, message: 'Internal server error' });
 	}
 };

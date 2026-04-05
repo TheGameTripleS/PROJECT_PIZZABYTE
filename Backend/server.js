@@ -13,14 +13,19 @@ import staffRoutes from "./routes/staffRoutes.js";
 import ingredientRoutes from "./routes/ingredientRoutes.js";
 import recipeRoutes from "./routes/recipeRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
+import incomeRoutes from "./routes/incomeRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
+import receptionistRoutes from "./routes/receptionistRoutes.js";
 import { ensureProcessCheckoutRoutine } from "./services/processCheckoutRoutine.js";
 import { syncIdentitySequences } from "./services/syncIdentitySequences.js";
 import { ensurePaymentSafetyRoutine } from "./services/paymentSafetyRoutine.js";
 import { ensureOrderStockDeductionRoutine } from "./services/orderStockDeductionRoutine.js";
 import { ensureOrderItemConcurrencyRoutine } from "./services/orderItemConcurrencyRoutine.js";
+import { ensureIncomeMetricsRoutine } from "./services/incomeMetricsRoutine.js";
 import { ensureOrderPaymentCancellationRoutine } from "./services/orderPaymentCancellationRoutine.js";
 import applyRecipeTriggers from "./services/applyRecipeTriggers.js";
+import { ensureReceptionistStockRoutine } from "./services/receptionistStockRoutine.js";
+import { ensureStaffRotaTimeGuardRoutine } from "./services/staffRotaTimeGuardRoutine.js";
 
 // 2. Import Database Connection
 import { sql } from "../Database/db.js"; // From server.js
@@ -67,7 +72,10 @@ app.use("/api/staff", staffRoutes);
 app.use("/api/ingredients", ingredientRoutes);
 app.use("/api/recipes", recipeRoutes);
 app.use("/api/expenses", expenseRoutes);
+app.use("/api/income", incomeRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/receptionist", receptionistRoutes);
+app.use("/receptionist", receptionistRoutes);
 
 // 6. Global 404 Handler (from index.mjs)
 app.use((req, res) => {
@@ -111,7 +119,10 @@ async function initializeServer() {
     await ensurePaymentSafetyRoutine();
     await ensureOrderItemConcurrencyRoutine();
     await ensureOrderStockDeductionRoutine();
+    await ensureIncomeMetricsRoutine();
     await ensureOrderPaymentCancellationRoutine();
+    await ensureReceptionistStockRoutine();
+    await ensureStaffRotaTimeGuardRoutine();
     await syncIdentitySequences();
 
     app.listen(PORT, () => {

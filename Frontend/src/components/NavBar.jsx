@@ -6,14 +6,16 @@ function NavBar({ handleLogout }) {
   const location = useLocation()
   const navigate = useNavigate()
   const isAdminHome = location.pathname === "/admin"
+  const shouldShowLogout = isAdminHome
   const shouldShowHome =
     location.pathname.startsWith("/staff") ||
     location.pathname.startsWith("/admin/items") ||
     location.pathname.startsWith("/item/") ||
     location.pathname.startsWith("/recipe/") ||
     location.pathname.startsWith("/ingredients") ||
-    location.pathname.startsWith("/expenses")
-  const shouldShowLogout = !location.pathname.startsWith("/recipe/")
+    location.pathname.startsWith("/expenses") ||
+    location.pathname.startsWith("/income") ||
+    location.pathname.startsWith("/reception-management")
 
   return (
     <div className="bg-base-100/80 backdrop-blur-lg border-b border-base-content/10 sticky top-0 z-50">

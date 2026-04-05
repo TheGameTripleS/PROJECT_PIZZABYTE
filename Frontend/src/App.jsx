@@ -46,11 +46,16 @@ import NavBar from "./components/NavBar";
 import AdminHomePage from "./pages/AdminHomePage";
 import AdminItemPage from "./pages/AdminItemPage";
 import ExpensesPage from "./pages/ExpensesPage";
+import IncomePage from "./pages/IncomePage";
 import IngredientsPage from "./pages/IngredientsPage";
 import ItemPage from "./pages/ItemPage";
+import ReceptionManagementPage from "./pages/ReceptionManagementPage";
 import RecipePage from "./pages/RecipePage";
 import StaffPage from "./pages/StaffPage";
 import ReceptionistDashboard from "./pages/ReceptionistDashboard";
+import ReceptionistOrdersTodayPage from "./pages/ReceptionistOrdersTodayPage";
+import ReceptionistStaffRotaPage from "./pages/ReceptionistStaffRotaPage";
+import ReceptionistStoreStockPage from "./pages/ReceptionistStoreStockPage";
 import { useThemeStore } from "./store/useThemeStore";
 
 function App() {
@@ -235,12 +240,47 @@ function App() {
                 </>
               }
             />
+
+            <Route
+              path="/income"
+              element={
+                <>
+                  <NavBar handleLogout={handleLogoutUser} />
+                  <IncomePage />
+                </>
+              }
+            />
+
+            <Route
+              path="/reception-management"
+              element={
+                <>
+                  <NavBar handleLogout={handleLogoutUser} />
+                  <ReceptionManagementPage />
+                </>
+              }
+            />
           </Routes>
         </div>
       ) : isReceptionist ? (
         <div className="min-h-screen bg-base-200 transition-colors duration-300" data-theme={theme}>
-          <NavBar handleLogout={handleLogoutUser} />
-          <ReceptionistDashboard user={user} handleLogout={handleLogoutUser} />
+          <Routes>
+            <Route path="/" element={<Navigate to="/reception" replace />} />
+            <Route path="/reception" element={<ReceptionistDashboard user={user} handleLogout={handleLogoutUser} />} />
+            <Route
+              path="/reception/store-stock"
+              element={<ReceptionistStoreStockPage user={user} handleLogout={handleLogoutUser} />}
+            />
+            <Route
+              path="/reception/orders-today"
+              element={<ReceptionistOrdersTodayPage user={user} handleLogout={handleLogoutUser} />}
+            />
+            <Route
+              path="/reception/staff-rota"
+              element={<ReceptionistStaffRotaPage user={user} handleLogout={handleLogoutUser} />}
+            />
+            <Route path="*" element={<Navigate to="/reception" replace />} />
+          </Routes>
         </div>
       ) : (
         <>
